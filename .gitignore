@@ -19,6 +19,8 @@ backend/npm-debug.log*
 backend/yarn-error.log*
 backend/uploads/
 backend/temp/
+backend/models/
+backend/DataRegistry.json
 
 # Blockchain (Solidity + Hardhat)
 blockchain/node_modules/
@@ -61,7 +63,6 @@ coverage/
 
 # Misc
 *.bak
-.env.example
 
 # Ignore python virtual environments
 venv/
