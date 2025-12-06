@@ -33,6 +33,7 @@ blockchain/typechain-types/
 blockchain/dist/
 blockchain/npm-debug.log*
 blockchain/yarn-error.log*
+blockchain/ignition/deployments/chain-31337/
 
 # IDE
 .vscode/
