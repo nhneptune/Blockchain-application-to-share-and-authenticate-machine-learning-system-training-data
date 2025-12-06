@@ -1,13 +1,17 @@
 # Frontend (React + Vite)
 frontend/node_modules/
+frontend/src/contracts/DataRegistry.json
 frontend/dist/
+frontend/dist-ssr/
 frontend/build/
 frontend/.env
 frontend/.env.local
 frontend/.env.*.local
 frontend/yarn-error.log*
 frontend/npm-debug.log*
+frontend/pnpm-debug.log*
 frontend/.vite/
+frontend/*.local
 
 # Backend (Node.js + Express)
 backend/node_modules/
