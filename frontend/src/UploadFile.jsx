@@ -1,7 +1,7 @@
 import { useState } from "react";
 import CryptoJS from "crypto-js";
 
-export default function UploadFile() {
+export default function UploadFile({ onHashVerified }) {
   const [file, setFile] = useState(null);
   const [clientHash, setClientHash] = useState("");
   const [serverHash, setServerHash] = useState("");
@@ -44,7 +44,15 @@ export default function UploadFile() {
 
     const data = await res.json();
     setServerHash(data.serverHash);
-    setResult(data.match ? "✔ Hash khớp" : "❌ Hash không khớp");
+    if (data.match) {
+      setResult("✔ Hash khớp");
+      // Gửi hash đã xác thực cho RegisterData
+      if (onHashVerified) {
+        onHashVerified(data.serverHash);
+      }
+    } else {
+      setResult("❌ Hash không khớp");
+    }
   };
 
   return (

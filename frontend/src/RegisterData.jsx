@@ -1,12 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 
 import contractABI from "./contracts/DataRegistry.json";
 import addresses from "./contracts/contract-address.json";
 
-export default function RegisterData() {
+export default function RegisterData({ verifiedHash }) {
   const [status, setStatus] = useState("");
   const [hashInput, setHashInput] = useState("");
+
+  // Tự động điền hash khi nhận được từ UploadFile
+  useEffect(() => {
+    if (verifiedHash) {
+      setHashInput(verifiedHash);
+    }
+  }, [verifiedHash]);
 
   const registerData = async () => {
     try {
@@ -64,15 +71,21 @@ export default function RegisterData() {
     <div>
       <h3>Đăng ký hash dataset lên Blockchain</h3>
 
-      <input
-        type="text"
-        placeholder="Nhập hash SHA-256 (hex)"
-        value={hashInput}
-        onChange={(e) => setHashInput(e.target.value)}
-      />
+      {hashInput ? (
+        <p><b>Hash xác thực:</b> {hashInput}</p>
+      ) : (
+        <input
+          type="text"
+          placeholder="Nhập hash SHA-256 (hex)"
+          value={hashInput}
+          onChange={(e) => setHashInput(e.target.value)}
+        />
+      )}
 
       <br /><br />
-      <button onClick={registerData}>Đăng ký</button>
+      <button onClick={registerData} disabled={!hashInput}>
+        Đăng ký
+      </button>
 
       <p>{status}</p>
     </div>
