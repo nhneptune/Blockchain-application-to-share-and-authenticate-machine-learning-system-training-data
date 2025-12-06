@@ -1,0 +1,68 @@
+# Frontend (React + Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/yarn-error.log*
+frontend/npm-debug.log*
+frontend/.vite/
+
+# Backend (Node.js + Express)
+backend/node_modules/
+backend/.env
+backend/.env.local
+backend/dist/
+backend/build/
+backend/npm-debug.log*
+backend/yarn-error.log*
+backend/uploads/
+backend/temp/
+
+# Blockchain (Solidity + Hardhat)
+blockchain/node_modules/
+blockchain/.env
+blockchain/.env.local
+blockchain/artifacts/
+blockchain/cache/
+blockchain/coverage/
+blockchain/typechain-types/
+blockchain/dist/
+blockchain/npm-debug.log*
+blockchain/yarn-error.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+logs/
+*.log
+lerna-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+*.bak
+.env.example
+
+# Ignore python virtual environments
+venv/
+.env/
