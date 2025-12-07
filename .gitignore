@@ -24,6 +24,7 @@ backend/yarn-error.log*
 backend/uploads/
 backend/temp/
 backend/models/
+backend/metadata.json
 backend/DataRegistry.json
 
 # Blockchain (Solidity + Hardhat)
