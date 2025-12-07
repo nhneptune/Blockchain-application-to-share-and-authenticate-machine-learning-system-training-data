@@ -1,99 +1,135 @@
 import { useState } from "react";
+import { Routes, Route, useNavigate } from "react-router-dom"; // Thêm useNavigate
+import Layout from "./Layout";
 import ConnectWallet from "./ConnectWallet";
 import RegisterData from "./RegisterData";
 import UploadFile from "./UploadFile";
 import ContributionsTable from "./ContributionsTable";
 import "./App.css";
 
-function App() {
-  const [account, setAccount] = useState(null);
-  const [contributions, setContributions] = useState([]);
-
+// --- Trang Dashboard (Trang chủ) ---
+function DashboardHome({ account, setAccount }) {
   return (
-    <div className="dashboard-container">
-      {/* SIDEBAR TRÁI */}
-      <aside className="sidebar">
-        <div className="brand">
-          <span>⚡</span> Vitality
+    <div>
+      <h1 className="page-title">Dashboard Overview</h1>
+      
+      {/* Card chính để kết nối ví */}
+      <div className="vitality-card card-blue">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '28px', color: 'white' }}>Blockchain ML Platform</h2>
+            <p style={{ opacity: 0.9, marginTop: '10px', color: '#e6fffa' }}>
+              Xác thực và chia sẻ dữ liệu huấn luyện AI phi tập trung.
+            </p>
+            <div style={{ marginTop: '20px' }}>
+              {/* Truyền setAccount vào để cập nhật trạng thái ví */}
+              {/* Sửa: Truyền walletAddress để hiển thị ví đã connect */}
+              <ConnectWallet setWallet={setAccount} walletAddress={account} /> 
+            </div>
+          </div>
+          <div style={{ fontSize: '80px', opacity: 0.3 }}>🔗</div>
+        </div>
+      </div>
+
+      {/* Các widget thống kê nhỏ */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+        <div className="vitality-card">
+          <h3>Trạng thái ví</h3>
+          <p style={{ fontSize: '16px', fontWeight: 'bold', margin: '15px 0', color: account ? '#319795' : '#e53e3e' }}>
+            {account ? "🟢 Đã kết nối" : "🔴 Chưa kết nối"}
+          </p>
+          <span style={{ fontSize: '12px', color: '#a0aec0' }}>
+            {account ? `${account.substring(0, 15)}...` : "Vui lòng kết nối ví"}
+          </span>
         </div>
         
-        <div className="menu">
-          <div className="menu-item active">🏠 Dashboard</div>
-          <div className="menu-item">⚡ Sport</div>
-          <div className="menu-item">📅 Plan</div>
-          <div className="menu-item">📊 Category</div>
-          <div className="menu-item">🛍️ Store</div>
+        <div className="vitality-card">
+          <h3>Hệ thống</h3>
+          <p style={{ fontSize: '28px', fontWeight: 'bold', color: '#f6ad55', margin: '10px 0' }}>Sepolia</p>
+          <span style={{ fontSize: '12px', color: 'green' }}>Testnet Active</span>
         </div>
-
-        <div className="logout-btn">
-           Log Out
-        </div>
-      </aside>
-
-      {/* NỘI DUNG CHÍNH (PHẢI) */}
-      <main className="main-content">
-        {/* Header giả lập */}
-        <header className="header">
-          <div className="nav-links">
-            <span>Popular</span>
-            <span>Attention</span>
-            <span>Topic</span>
-          </div>
-          <div className="search-bar">
-            🔍 <input type="text" placeholder="Search dataset..." />
-          </div>
-        </header>
-
-        <div className="dashboard-grid">
-          {/* CỘT TRÁI CỦA NỘI DUNG */}
-          <div className="grid-left">
-            {/* 1. Wallet Card - Style giống Banner xanh trong ảnh */}
-            <div className="card card-highlight">
-              <h2>🚀 Web3 Registry</h2>
-              <p>Connect wallet to start managing your decentralized data.</p>
-              <div style={{ marginTop: '20px' }}>
-                 <ConnectWallet setWallet={setAccount} />
-              </div>
-            </div>
-
-            {/* 2. Upload File */}
-            <div className="card">
-              <h2>📤 Upload Dataset</h2>
-              <p className="sub-text">Select file and upload to IPFS/Backend</p>
-              <UploadFile wallet={account} />
-            </div>
-
-            {/* 3. Register Data */}
-            <div className="card">
-              <h2>📝 Register Metadata</h2>
-              <p className="sub-text">Store dataset information on-chain</p>
-              <RegisterData account={account} />
-            </div>
-          </div>
-
-          {/* CỘT PHẢI CỦA NỘI DUNG (Nhỏ hơn) */}
-          <div className="grid-right">
-             <div className="card">
-                <h2>👤 Status</h2>
-                <div style={{marginTop: '15px', textAlign: 'center'}}>
-                    {account ? (
-                        <div style={{color: '#4fd1c5', fontWeight: 'bold'}}>Connected</div>
-                    ) : (
-                        <div style={{color: '#e53e3e'}}>Disconnected</div>
-                    )}
-                </div>
-             </div>
-
-             {/* Contributions Table */}
-             <div className="card">
-                <h2>📚 History</h2>
-                <ContributionsTable contributions={contributions} />
-             </div>
-          </div>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
 
+// --- App Chính ---
+function App() {
+  // 1. State quản lý ví (Dùng chung cho cả app)
+  const [account, setAccount] = useState(null);
+
+  // 2. State logic nghiệp vụ
+  const [verifiedHash, setVerifiedHash] = useState("");
+  const [uploadData, setUploadData] = useState(null);
+
+  // Hook điều hướng trang
+  const navigate = useNavigate();
+
+  // Hàm xử lý khi Upload xong -> Tự động chuyển sang trang Register
+  const handleUploadSuccess = (data) => {
+    setUploadData(data);
+    // Chuyển hướng sang trang register
+    navigate("/register"); 
+  };
+
+  return (
+    <Routes>
+      {/* Layout bao bọc bên ngoài (Sidebar + Header) */}
+      <Route path="/" element={<Layout account={account} handleLogout={() => setAccount(null)} />}>
+        
+        {/* TRANG 1: Dashboard (Mặc định) */}
+        <Route index element={<DashboardHome account={account} setAccount={setAccount} />} />
+
+        {/* TRANG 2: Upload File */}
+        <Route path="upload" element={
+          <div>
+            <h2 className="page-title">📤 Upload Dataset</h2>
+            <div className="vitality-card" style={{ maxWidth: '800px' }}>
+              <p className="sub-text">Tải file lên IPFS/Server để lấy Hash xác thực.</p>
+              
+              <UploadFile
+                onHashVerified={setVerifiedHash}
+                onUploadComplete={handleUploadSuccess} // Sử dụng hàm mới để điều hướng
+                walletAddress={account} // QUAN TRỌNG: Sửa 'wallet' thành 'walletAddress' cho khớp với file UploadFile.jsx
+              />
+            </div>
+          </div>
+        } />
+
+        {/* TRANG 3: Register Metadata */}
+        <Route path="register" element={
+          <div>
+            <h2 className="page-title">📝 Register Metadata</h2>
+            <div className="vitality-card">
+              <p className="sub-text">Ghi thông tin Dataset lên Blockchain.</p>
+              
+              {/* Kiểm tra xem đã có hash chưa để hiển thị cảnh báo */}
+              {!verifiedHash ? (
+                <div style={{ color: "#d69e2e", backgroundColor: "#fffaf0", padding: "10px", borderRadius: "5px" }}>
+                  ⚠️ Vui lòng <b style={{cursor: "pointer", textDecoration:"underline"}} onClick={() => navigate("/upload")}>Upload File</b> trước để lấy Hash.
+                </div>
+              ) : (
+                <RegisterData
+                  // account={account} -> RegisterData tự lấy từ metamask, nhưng truyền vào cũng không sao
+                  verifiedHash={verifiedHash}
+                  uploadData={uploadData}
+                />
+              )}
+            </div>
+          </div>
+        } />
+
+        {/* TRANG 4: History Table */}
+        <Route path="history" element={
+          <div>
+            <ContributionsTable />
+          </div>
+        } />
+
+      </Route>
+    </Routes>
+  );
+}
+
+// Lưu ý: App cần được bọc trong <BrowserRouter> ở file index.js hoặc main.jsx
 export default App;

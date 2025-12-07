@@ -1,26 +1,81 @@
-export default function ContributionsTable({ wallet }) {
-  const dummy = [
-    { title: "Rainfall Data 2023", timestamp: "2025-01-02" },
-    { title: "ImageSet v2", timestamp: "2025-02-11" },
-  ];
+// file: ContributionsTable.jsx
+import React, { useEffect, useState } from "react";
+
+export default function ContributionsTable() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
+
+  // Giữ nguyên logic fetch data của bạn
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:4000/contributions");
+      const data = await res.json();
+      setItems(data.items || []);
+    } catch (err) {
+      console.error(err);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  const toggleExpanded = (id) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
 
   return (
-    <table className="w-full text-white border-collapse bg-white/10 rounded-xl overflow-hidden backdrop-blur-xl border border-white/20">
-      <thead className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
-        <tr>
-          <th className="px-4 py-3 text-left">Dataset</th>
-          <th className="px-4 py-3 text-left">Timestamp</th>
-        </tr>
-      </thead>
+    <div className="vitality-card">
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px'}}>
+        <h2 className="page-title" style={{margin:0}}>Contributions History</h2>
+        <button className="btn-primary" onClick={fetchData}>Refresh</button>
+      </div>
 
-      <tbody>
-        {dummy.map((item, i) => (
-          <tr key={i} className="border-b border-white/20">
-            <td className="px-4 py-3">{item.title}</td>
-            <td className="px-4 py-3">{item.timestamp}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+      {loading ? <p>Loading data...</p> : (
+        <table className="vitality-table">
+          <thead>
+            <tr>
+              <th width="50"></th>
+              <th>ID</th>
+              <th>Owner</th>
+              <th>Dataset Name</th>
+              <th>Type</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <React.Fragment key={item.id}>
+                <tr>
+                  <td>
+                    <button onClick={() => toggleExpanded(item.id)} style={{border:'none', background:'transparent', cursor:'pointer', color:'#4fd1c5'}}>
+                      {expandedId === item.id ? "▼" : "▶"}
+                    </button>
+                  </td>
+                  <td><strong>#{item.id}</strong></td>
+                  <td style={{fontFamily:'monospace'}}>{item.owner.substring(0, 8)}...</td>
+                  <td>{item.metadata?.datasetName || "Unnamed"}</td>
+                  <td><span className="status-badge">{item.metadata?.dataType || "Raw"}</span></td>
+                  <td>{new Date(item.timestamp * 1000).toLocaleDateString()}</td>
+                </tr>
+                
+                {/* Expand Row */}
+                {expandedId === item.id && (
+                  <tr style={{background:'#f7fafc'}}>
+                    <td colSpan="6" style={{padding:'20px'}}>
+                       <div style={{background:'white', padding:'15px', borderRadius:'12px', border:'1px solid #edf2f7'}}>
+                          <p><strong>Hash:</strong> {item.hash}</p>
+                          <p><strong>Desc:</strong> {item.metadata?.description}</p>
+                       </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
   );
 }

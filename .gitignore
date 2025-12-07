@@ -1,6 +1,7 @@
 # Frontend (React + Vite)
 frontend/node_modules/
 frontend/src/contracts/DataRegistry.json
+frontend/src/contracts/contract-address.json
 frontend/dist/
 frontend/dist-ssr/
 frontend/build/
@@ -24,6 +25,7 @@ backend/yarn-error.log*
 backend/uploads/
 backend/temp/
 backend/models/
+backend/metadata.json
 backend/DataRegistry.json
 
 # Blockchain (Solidity + Hardhat)
