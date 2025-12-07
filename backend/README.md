@@ -35,16 +35,12 @@ SEPOLIA_RPC_URL=http://127.0.0.1:8545
 DATAREGISTRY_ADDRESS=0x...  # Your deployed contract address
 ```
 
-### 3. Copy Blockchain Artifact
+### 3. Copy DataRegistry.json file
 
 After deploying your smart contract from `blockchain/`:
 
 ```bash
-# Option A: Auto-detection (recommended)
-# The app will automatically find it from:
-# blockchain/artifacts/contracts/DataRegistry.sol/DataRegistry.json
-
-# Option B: Manual copy (if needed)
+# Manual copy the file from blockchain/artifacts/contracts/DataRegistry.sol/DataRegistry.json
 cp ../blockchain/artifacts/contracts/DataRegistry.sol/DataRegistry.json ./
 ```
 
