@@ -54,9 +54,12 @@ function writeDB(data) {
 function addMetadata(metadata) {
   const db = readDB();
   
+  // Normalize hash: loại 0x prefix nếu có
+  const normalizedHash = metadata.hash.toLowerCase().replace(/^0x/, "");
+  
   const entry = {
     id: db.entries.length,
-    hash: metadata.hash,
+    hash: normalizedHash,
     datasetName: metadata.datasetName,
     description: metadata.description,
     dataType: metadata.dataType,
@@ -75,11 +78,13 @@ function addMetadata(metadata) {
 }
 
 /**
- * Lấy metadata theo hash
+ * Lấy metadata theo hash (normalize bằng cách loại 0x prefix)
  */
 function getMetadataByHash(hash) {
   const db = readDB();
-  return db.entries.find((e) => e.hash === hash);
+  // Normalize: loại 0x prefix nếu có
+  const normalizedHash = hash.toLowerCase().replace(/^0x/, "");
+  return db.entries.find((e) => e.hash.toLowerCase() === normalizedHash);
 }
 
 /**

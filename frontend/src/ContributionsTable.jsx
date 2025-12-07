@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 export default function ContributionsTable() {
   const [items, setItems] = useState([]);
@@ -105,7 +105,7 @@ export default function ContributionsTable() {
                 </tr>
               ) : (
                 items.map((item) => (
-                  <tbody key={item.id}>
+                  <React.Fragment key={item.id}>
                     <tr style={{ borderTop: "1px solid #eee" }}>
                       <td style={{ border: "1px solid #ddd", padding: "12px", textAlign: "center" }}>
                         <button
@@ -196,7 +196,7 @@ export default function ContributionsTable() {
                         </td>
                       </tr>
                     )}
-                  </tbody>
+                  </React.Fragment>
                 ))
               )}
             </tbody>

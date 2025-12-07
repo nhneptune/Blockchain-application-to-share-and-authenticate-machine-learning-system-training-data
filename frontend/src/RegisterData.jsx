@@ -9,8 +9,6 @@ export default function RegisterData({ verifiedHash, uploadData }) {
   const [hashInput, setHashInput] = useState("");
   const [metadataInfo, setMetadataInfo] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [privateKey, setPrivateKey] = useState("");
-  const [showPrivateKeyInput, setShowPrivateKeyInput] = useState(false);
 
   // Tự động điền hash khi nhận được từ UploadFile
   useEffect(() => {
@@ -61,7 +59,15 @@ export default function RegisterData({ verifiedHash, uploadData }) {
       console.log("Gửi hash:", hashBytes32);
       setStatus("⏳ Đang gửi transaction lên blockchain...");
 
-      const tx = await contract.registerData(hashBytes32);
+      // Call registerData with 6 parameters (new smart contract signature)
+      const tx = await contract.registerData(
+        hashBytes32,
+        metadataInfo?.metadata?.datasetName || "Unknown",
+        metadataInfo?.metadata?.description || "",
+        metadataInfo?.metadata?.dataType || "text",
+        metadataInfo?.fileSize || 0,
+        metadataInfo?.metadata?.license || "CC0 (Public Domain)"
+      );
       console.log("Transaction hash:", tx.hash);
 
       setStatus(`⏳ Đang chờ xác nhận… (tx: ${tx.hash})`);
@@ -72,6 +78,14 @@ export default function RegisterData({ verifiedHash, uploadData }) {
       setStatus(`✔ Thành công! Transaction hash: ${tx.hash}`);
       setLoading(false);
     } catch (err) {
+      // Check if user cancelled the transaction
+      if (err.code === "ACTION_REJECTED" || err.message?.includes("User rejected")) {
+        // Silent cancel - don't log or show error
+        setStatus("");
+        setLoading(false);
+        return;
+      }
+      
       console.error("Chi tiết lỗi:", err);
       setStatus(`❌ Lỗi: ${err.message || err}`);
       setLoading(false);
@@ -160,60 +174,6 @@ export default function RegisterData({ verifiedHash, uploadData }) {
         <p style={{ color: status.includes("✔") ? "green" : status.includes("❌") ? "red" : "black" }}>
           {status || "-"}
         </p>
-      </div>
-
-      {/* Private Key Input for Backend Registration */}
-      <div style={{ marginTop: "20px", padding: "15px", backgroundColor: "#fff3cd", borderRadius: "4px", border: "1px solid #ffc107" }}>
-        <h4>🔐 Backend Registration (tùy chọn)</h4>
-        <p style={{ fontSize: "12px", color: "#666" }}>
-          Bước này sử dụng backend API để register metadata với đầy đủ thông tin trên smart contract.
-        </p>
-        
-        {!showPrivateKeyInput ? (
-          <button
-            onClick={() => setShowPrivateKeyInput(true)}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#ff9800",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "12px",
-            }}
-          >
-            Hiển thị Backend Option
-          </button>
-        ) : (
-          <div>
-            <input
-              type="password"
-              placeholder="Nhập private key"
-              value={privateKey}
-              onChange={(e) => setPrivateKey(e.target.value)}
-              disabled={loading}
-              style={{ width: "100%", padding: "8px", marginTop: "5px", boxSizing: "border-box" }}
-            />
-            <small style={{ color: "red", display: "block", marginTop: "5px" }}>
-              ⚠️ CẢNH BÁO: Không bao giờ chia sẻ private key của bạn!
-            </small>
-            <button
-              onClick={() => setShowPrivateKeyInput(false)}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "#666",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                cursor: "pointer",
-                fontSize: "12px",
-                marginTop: "10px",
-              }}
-            >
-              Ẩn
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
