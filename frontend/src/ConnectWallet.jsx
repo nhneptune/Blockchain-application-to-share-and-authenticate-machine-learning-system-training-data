@@ -1,61 +1,33 @@
-import { useState, useEffect } from "react";
-import { BrowserProvider } from "ethers";
+import { useState } from "react";
+import { ethers } from "ethers";
 
-export default function ConnectWallet() {
-  const [address, setAddress] = useState("");
-  const [isConnected, setIsConnected] = useState(false);
+export default function ConnectWallet({ setWallet }) {
+  const [connected, setConnected] = useState(false);
 
-  // Hàm connect MetaMask
-  const connectWallet = async () => {
-    try {
-      if (!window.ethereum) {
-        alert("MetaMask chưa được cài!");
-        return;
-      }
+  async function connect() {
+    if (!window.ethereum) return alert("Install MetaMask!");
 
-      const provider = new BrowserProvider(window.ethereum);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      setAddress(accounts[0]);
-      setIsConnected(true);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Tự cập nhật khi user đổi account trong MetaMask
-  useEffect(() => {
-    if (window.ethereum) {
-      window.ethereum.on("accountsChanged", (accounts) => {
-        setAddress(accounts[0] || "");
-        setIsConnected(accounts.length > 0);
-      });
-
-      window.ethereum.on("chainChanged", () => {
-        window.location.reload();
-      });
-    }
-  }, []);
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const accounts = await provider.send("eth_requestAccounts", []);
+    setWallet(accounts[0]);
+    setConnected(true);
+  }
 
   return (
-    <div style={{ marginTop: "20px" }}>
-      {!isConnected ? (
-        <button
-          onClick={connectWallet}
-          style={{
-            padding: "10px 20px",
-            background: "#4b7bec",
-            color: "white",
-            borderRadius: "8px",
-            cursor: "pointer",
-          }}
-        >
-          Connect MetaMask
-        </button>
-      ) : (
-        <div style={{ fontSize: "18px" }}>
-          <b>Connected:</b> {address}
-        </div>
-      )}
-    </div>
+    <button
+      onClick={connect}
+      style={{
+        background: 'white',
+        color: '#319795',
+        padding: '10px 20px',
+        borderRadius: '12px',
+        border: 'none',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+      }}
+    >
+      {connected ? "✅ Wallet Connected" : "🔗 Connect Wallet"}
+    </button>
   );
 }

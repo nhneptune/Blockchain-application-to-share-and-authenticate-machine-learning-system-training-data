@@ -1,93 +1,30 @@
-import { useState, useEffect } from "react";
-import { ethers } from "ethers";
+import { useState } from "react";
 
-import contractABI from "./contracts/DataRegistry.json";
-import addresses from "./contracts/contract-address.json";
+export default function RegisterData({ wallet }) {
+  const [title, setTitle] = useState("");
 
-export default function RegisterData({ verifiedHash }) {
-  const [status, setStatus] = useState("");
-  const [hashInput, setHashInput] = useState("");
+  async function register() {
+    if (!wallet) return alert("Connect wallet first!");
 
-  // Tự động điền hash khi nhận được từ UploadFile
-  useEffect(() => {
-    if (verifiedHash) {
-      setHashInput(verifiedHash);
-    }
-  }, [verifiedHash]);
-
-  const registerData = async () => {
-    try {
-      setStatus("🔍 Kiểm tra MetaMask...");
-      
-      if (!window.ethereum) {
-        alert("MetaMask chưa được cài!");
-        return;
-      }
-
-      await window.ethereum.request({ method: "eth_requestAccounts" });
-
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const signerAddress = await signer.getAddress();
-      
-      // Debug: Hiển thị network + ví
-      const network = await provider.getNetwork();
-      console.log("Network:", network.name, "ChainID:", network.chainId);
-      console.log("Signer Address:", signerAddress);
-      console.log("Contract Address:", addresses.DataRegistry);
-      
-      setStatus(`🔗 Network: ${network.name} | Ví: ${signerAddress}`);
-
-      const contract = new ethers.Contract(
-        addresses.DataRegistry,
-        contractABI.abi,
-        signer
-      );
-
-      let hashBytes32 = hashInput;
-      if (!hashInput.startsWith("0x")) {
-        hashBytes32 = "0x" + hashInput;
-      }
-
-      console.log("Gửi hash:", hashBytes32);
-      setStatus("⏳ Đang gửi transaction lên blockchain...");
-
-      const tx = await contract.registerData(hashBytes32);
-      console.log("Transaction hash:", tx.hash);
-
-      setStatus(`⏳ Đang chờ xác nhận… (tx: ${tx.hash})`);
-
-      const receipt = await tx.wait();
-      console.log("Receipt:", receipt);
-
-      setStatus(`✔ Thành công! Transaction hash: ${tx.hash}`);
-    } catch (err) {
-      console.error("Chi tiết lỗi:", err);
-      setStatus(`❌ Lỗi: ${err.message || err}`);
-    }
-  };
+    alert("Metadata registered!");
+  }
 
   return (
-    <div>
-      <h3>Đăng ký hash dataset lên Blockchain</h3>
+    <div className="space-y-4">
+      <input
+        type="text"
+        placeholder="Dataset title..."
+        className="w-full px-4 py-3 rounded-xl bg-white/20 border border-white/30 text-white placeholder-white/80 backdrop-blur-lg focus:ring-2 focus:ring-pink-300"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
 
-      {hashInput ? (
-        <p><b>Hash xác thực:</b> {hashInput}</p>
-      ) : (
-        <input
-          type="text"
-          placeholder="Nhập hash SHA-256 (hex)"
-          value={hashInput}
-          onChange={(e) => setHashInput(e.target.value)}
-        />
-      )}
-
-      <br /><br />
-      <button onClick={registerData} disabled={!hashInput}>
-        Đăng ký
+      <button
+        onClick={register}
+        className="px-6 py-3 w-full bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 rounded-xl font-semibold shadow-lg hover:opacity-90 transition"
+      >
+        Register
       </button>
-
-      <p>{status}</p>
     </div>
   );
 }

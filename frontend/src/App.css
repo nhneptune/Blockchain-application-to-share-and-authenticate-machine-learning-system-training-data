@@ -1,42 +1,170 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+/* CONTAINER CHÍNH: Chia 2 cột (Sidebar + Main) */
+.dashboard-container {
+  display: flex;
+  height: 100vh;
+  padding: 20px;
+  gap: 20px;
+}
+
+/* --- SIDEBAR (Bên trái) --- */
+.sidebar {
+  width: var(--sidebar-width);
+  background: linear-gradient(180deg, #4fd1c5 0%, #38b2ac 100%);
+  border-radius: 30px;
+  padding: 40px 30px;
+  display: flex;
+  flex-direction: column;
+  color: white;
+  flex-shrink: 0; /* Không bị co lại */
+  box-shadow: var(--shadow-soft);
+}
+
+.brand {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 50px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand span { color: #fbd38d; } /* Chữ V màu vàng */
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: 0.3s;
+}
+
+.menu-item:hover, .menu-item.active {
+  opacity: 1;
+  font-weight: 700;
+}
+
+.menu-item.active::before {
+  content: "•";
+  margin-right: -10px;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 12px;
+  border-radius: 12px;
   text-align: center;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.3s;
+}
+.logout-btn:hover { background: rgba(255, 255, 255, 0.3); }
+
+/* --- MAIN CONTENT (Bên phải) --- */
+.main-content {
+  flex: 1;
+  background: white;
+  border-radius: 30px;
+  padding: 30px 40px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-soft);
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* HEADER: Search bar & Profile */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.nav-links {
+  display: flex;
+  gap: 20px;
+  color: #a0aec0;
+  font-weight: 600;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.search-bar {
+  background: #f7fafc;
+  padding: 10px 20px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  width: 300px;
 }
 
+.search-bar input {
+  border: none;
+  background: transparent;
+  outline: none;
+  margin-left: 10px;
+  width: 100%;
+  color: #4a5568;
+}
+
+/* GRID LAYOUT CHO WIDGETS */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* Cột trái to gấp đôi cột phải */
+  gap: 30px;
+}
+
+/* CARDS CHUNG */
 .card {
-  padding: 2em;
+  background: white;
+  border-radius: var(--card-radius);
+  padding: 25px;
+  box-shadow: var(--shadow-soft);
+  border: 1px solid #edf2f7;
+  margin-bottom: 25px;
 }
 
-.read-the-docs {
-  color: #888;
+/* Card màu xanh nổi bật (Giống cái Training Time) */
+.card-highlight {
+  background: linear-gradient(135deg, #4fd1c5 0%, #63b3ed 100%);
+  color: white;
+  border: none;
 }
+.card-highlight h2 { margin: 0 0 10px 0; font-size: 24px; }
+.card-highlight p { opacity: 0.9; }
+
+/* STYLE CÁC INPUT VÀ BUTTON TRONG FORM */
+input[type="text"], input[type="file"] {
+  width: 100%;
+  padding: 15px;
+  border-radius: 15px;
+  border: 2px solid #edf2f7;
+  background: #f9fafb;
+  outline: none;
+  margin-top: 10px;
+  transition: 0.3s;
+}
+input:focus { border-color: var(--primary-teal); }
+
+.btn-primary {
+  background: var(--primary-teal);
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 15px;
+  width: 100%;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 15px;
+  box-shadow: 0 4px 6px rgba(79, 209, 197, 0.3);
+  transition: 0.3s;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 8px rgba(79, 209, 197, 0.4); }
+
+.card h2 { font-size: 18px; color: #2d3748; margin-bottom: 5px; }
+.sub-text { font-size: 13px; color: #a0aec0; margin-bottom: 15px; }

@@ -1,78 +1,29 @@
 import { useState } from "react";
-import CryptoJS from "crypto-js";
 
-export default function UploadFile({ onHashVerified }) {
+export default function UploadFile({ wallet }) {
   const [file, setFile] = useState(null);
-  const [clientHash, setClientHash] = useState("");
-  const [serverHash, setServerHash] = useState("");
-  const [result, setResult] = useState("");
 
-  // Tính hash SHA-256 client-side
-  const calculateHashClient = (file) => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
+  async function upload() {
+    if (!wallet) return alert("Connect wallet first!");
+    if (!file) return alert("Choose a file!");
 
-      reader.onload = (e) => {
-        const wordArray = CryptoJS.lib.WordArray.create(e.target.result);
-        const hash = CryptoJS.SHA256(wordArray).toString();
-        resolve(hash);
-      };
-
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
-  const handleUpload = async () => {
-    if (!file) {
-      alert("Chưa chọn file");
-      return;
-    }
-
-    // 1) Client tự tính hash
-    const hash = await calculateHashClient(file);
-    setClientHash(hash);
-
-    // 2) Gửi file + hash sang server
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("clientHash", hash);
-
-    const res = await fetch("http://localhost:4000/upload", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await res.json();
-    setServerHash(data.serverHash);
-    if (data.match) {
-      setResult("✔ Hash khớp");
-      // Gửi hash đã xác thực cho RegisterData
-      if (onHashVerified) {
-        onHashVerified(data.serverHash);
-      }
-    } else {
-      setResult("❌ Hash không khớp");
-    }
-  };
+    alert("File uploaded!");
+  }
 
   return (
-    <div style={{ marginTop: "30px" }}>
-      <h3>Upload Dataset</h3>
-
+    <div className="upload-container">
       <input
         type="file"
         onChange={(e) => setFile(e.target.files[0])}
+        style={{marginBottom: '15px'}}
       />
 
-      <br /><br />
-
-      <button onClick={handleUpload}>Upload</button>
-
-      <div>
-        <p><b>Client hash:</b> {clientHash}</p>
-        <p><b>Server hash:</b> {serverHash}</p>
-        <p><b>Kết quả:</b> {result}</p>
-      </div>
+      <button
+        onClick={upload}
+        className="btn-primary" // Sử dụng class từ App.css
+      >
+        Upload Now
+      </button>
     </div>
   );
 }
