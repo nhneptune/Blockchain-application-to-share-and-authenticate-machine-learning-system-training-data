@@ -5,6 +5,7 @@ const cors = require("cors");
 // Import routes
 const uploadRouter = require("./routes/upload");
 const contributionsRouter = require("./routes/contributions");
+const registerMetadataRouter = require("./routes/register-metadata");
 const mlRouter = require("./routes/ml");
 const healthRouter = require("./routes/health");
 
@@ -21,6 +22,9 @@ app.use("/health", healthRouter);
 // Upload file
 app.use("/upload", uploadRouter);
 
+// Register metadata on blockchain
+app.use("/register-metadata", registerMetadataRouter);
+
 // Blockchain contributions
 app.use("/contributions", contributionsRouter);
 
@@ -35,7 +39,9 @@ app.listen(PORT, () => {
   console.log(`📋 Routes:`);
   console.log(`   GET  /health`);
   console.log(`   POST /upload`);
+  console.log(`   POST /register-metadata`);
   console.log(`   GET  /contributions`);
   console.log(`   POST /ml/train`);
   console.log(`PID: ${process.pid}`);
 });
+

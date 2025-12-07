@@ -1,12 +1,13 @@
 const express = require("express");
 const { contract, getCache, setCache } = require("../config");
 const { fetchRangeData } = require("../utils");
+const { getMetadataByHash } = require("../metadataDB");
 
 const router = express.Router();
 
 /**
  * GET /contributions
- * Đọc dữ liệu từ contract với cache
+ * Đọc dữ liệu từ contract với cache + metadata
  */
 router.get("/", async (req, res) => {
   try {
@@ -38,7 +39,25 @@ router.get("/", async (req, res) => {
     for (let start = 0; start < total; start += CHUNK) {
       const end = Math.min(start + CHUNK, total);
       const chunkData = await fetchRangeData(contract, start, end);
-      results = results.concat(chunkData);
+      
+      // Thêm metadata từ local DB
+      const enrichedData = chunkData.map((item) => {
+        const metadata = getMetadataByHash(item.hash);
+        return {
+          ...item,
+          metadata: metadata ? {
+            datasetName: metadata.datasetName,
+            description: metadata.description,
+            dataType: metadata.dataType,
+            fileSize: metadata.fileSize,
+            license: metadata.license,
+            uploadedAt: metadata.uploadedAt,
+            filename: metadata.filename,
+          } : null,
+        };
+      });
+
+      results = results.concat(enrichedData);
 
       // Early exit nếu đã đủ limit
       if (qLimit && results.length >= qLimit) {
@@ -71,3 +90,4 @@ router.get("/", async (req, res) => {
 });
 
 module.exports = router;
+
