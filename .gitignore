@@ -1,6 +1,7 @@
 # Frontend (React + Vite)
 frontend/node_modules/
 frontend/src/contracts/DataRegistry.json
+frontend/src/contracts/contract-address.json
 frontend/dist/
 frontend/dist-ssr/
 frontend/build/

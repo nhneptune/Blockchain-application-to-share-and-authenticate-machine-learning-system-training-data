@@ -28,7 +28,7 @@ cp ../blockchain/artifacts/contracts/DataRegistry.sol/DataRegistry.json src/cont
 This file contains the contract ABI needed for frontend to interact with the contract.
 
 ### 3. Update Contract Address
-
+Create src/contracts/contract-address.json with the format like src/contracts/contract-address.json.example
 Edit `src/contracts/contract-address.json` with deployed contract address:
 
 ```json
