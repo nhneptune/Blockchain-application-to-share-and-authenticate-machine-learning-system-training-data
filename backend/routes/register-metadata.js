@@ -1,7 +1,7 @@
 const express = require("express");
 const { ethers } = require("ethers");
 const { provider, RPC_URL, CONTRACT_ADDRESS } = require("../config");
-const { getMetadataById, updateBlockchainId } = require("../metadataDB");
+const { getDatasetById, updateDatasetBlockchainId } = require("../metadataDB");
 const fs = require("fs");
 const path = require("path");
 
@@ -17,20 +17,26 @@ const router = express.Router();
  */
 router.post("/", async (req, res) => {
   try {
-    const { metadataId, privateKey } = req.body;
+    const { datasetId, privateKey } = req.body;
 
-    if (!metadataId || metadataId === undefined) {
-      return res.status(400).json({ error: "metadataId is required" });
+    if (!datasetId && datasetId !== 0) {
+      return res.status(400).json({ error: "datasetId is required" });
     }
 
     if (!privateKey) {
       return res.status(400).json({ error: "privateKey is required" });
     }
 
-    // Lấy metadata từ local DB
-    const metadata = getMetadataById(metadataId);
-    if (!metadata) {
-      return res.status(404).json({ error: "Metadata not found" });
+    // Lấy dataset từ local DB
+    const dataset = getDatasetById(datasetId);
+    if (!dataset) {
+      return res.status(404).json({ error: "Dataset not found" });
+    }
+
+    // Get latest version
+    const latestVersion = dataset.versions[dataset.versions.length - 1];
+    if (!latestVersion) {
+      return res.status(404).json({ error: "No versions found for dataset" });
     }
 
     // Load ABI
@@ -51,30 +57,35 @@ router.post("/", async (req, res) => {
       signer
     );
 
-    // Call registerData function
+    // Call registerData function with dataset info
     const tx = await contract.registerData(
-      metadata.hash,
-      metadata.datasetName,
-      metadata.description,
-      metadata.dataType,
-      metadata.fileSize,
-      metadata.license
+      latestVersion.hash,
+      dataset.datasetName,
+      dataset.description || "",
+      dataset.dataType,
+      latestVersion.fileSize,
+      dataset.license || "CC0"
     );
 
     // Wait for transaction confirmation
     const receipt = await tx.wait();
 
-    // Update metadata với blockchain ID
+    // Update dataset with blockchain ID
     const blockchainId = receipt.logs ? receipt.logs.length - 1 : 0;
-    updateBlockchainId(metadataId, blockchainId);
+    updateDatasetBlockchainId(datasetId, blockchainId);
 
     return res.json({
       success: true,
       transactionHash: receipt.hash,
       blockNumber: receipt.blockNumber,
       blockchainId,
-      metadata,
-      message: "Metadata registered on blockchain successfully",
+      dataset: {
+        id: dataset.id,
+        datasetName: dataset.datasetName,
+        totalVersions: dataset.versions.length,
+        latestVersion: latestVersion.version,
+      },
+      message: "Dataset registered on blockchain successfully",
     });
   } catch (err) {
     console.error("Error in POST /register-metadata:", err);

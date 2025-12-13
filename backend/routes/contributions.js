@@ -1,91 +1,94 @@
 const express = require("express");
-const { contract, getCache, setCache } = require("../config");
-const { fetchRangeData } = require("../utils");
-const { getMetadataByHash } = require("../metadataDB");
+const { getAllDatasets } = require("../metadataDB");
 
 const router = express.Router();
 
 /**
  * GET /contributions
- * Đọc dữ liệu từ contract với cache + metadata
+ * Lấy tất cả contributions (datasets) từ versioning DB
  */
-router.get("/", async (req, res) => {
+router.get("/", (req, res) => {
   try {
-    // Kiểm tra cache
-    const now = Math.floor(Date.now() / 1000);
-    const currentCache = getCache();
-    
-    if (currentCache.data && (now - currentCache.ts) < currentCache.ttl) {
-      return res.json({ 
-        fromCache: true, 
-        count: currentCache.data.length, 
-        items: currentCache.data,
-        cacheAge: now - currentCache.ts
-      });
-    }
+    const datasets = getAllDatasets();
+    console.log(`\n📊 [CONTRIBUTIONS] Fetching all datasets. Count: ${datasets.length}`);
 
-    // Đọc tổng số bản ghi từ contract
-    const totalBN = await contract.count();
-    const total = Number(totalBN);
+    // Transform datasets to contributions format
+    const items = datasets.map((dataset) => {
+      const latestVersion = dataset.versions[dataset.versions.length - 1];
+      console.log(`  Dataset ${dataset.id}: ${dataset.datasetName} (${dataset.versions.length} versions)`);
+      return {
+        id: dataset.id,
+        hash: latestVersion.hash,
+        owner: dataset.ownerAddress,
+        timestamp: new Date(latestVersion.uploadedAt).getTime() / 1000,
+        metadata: {
+          datasetName: dataset.datasetName,
+          description: latestVersion.description,
+          dataType: dataset.dataType,
+          fileSize: latestVersion.fileSize,
+          license: dataset.license,
+        },
+        version: latestVersion.version,
+        totalVersions: dataset.versions.length,
+        blockchainId: dataset.blockchainId,
+      };
+    });
 
-    // Query params
-    const qOwner = (req.query.owner || "").toLowerCase();
-    const qLimit = req.query.limit ? Math.min(Number(req.query.limit), 1000) : null;
-
-    // Fetch dữ liệu từ contract (chunked)
-    const CHUNK = 50;
-    let results = [];
-    
-    for (let start = 0; start < total; start += CHUNK) {
-      const end = Math.min(start + CHUNK, total);
-      const chunkData = await fetchRangeData(contract, start, end);
-      
-      // Thêm metadata từ local DB
-      const enrichedData = chunkData.map((item) => {
-        const metadata = getMetadataByHash(item.hash);
-        return {
-          ...item,
-          metadata: metadata ? {
-            datasetName: metadata.datasetName,
-            description: metadata.description,
-            dataType: metadata.dataType,
-            fileSize: metadata.fileSize,
-            license: metadata.license,
-            uploadedAt: metadata.uploadedAt,
-            filename: metadata.filename,
-          } : null,
-        };
-      });
-
-      results = results.concat(enrichedData);
-
-      // Early exit nếu đã đủ limit
-      if (qLimit && results.length >= qLimit) {
-        results = results.slice(0, qLimit);
-        break;
-      }
-    }
-
-    // Filter theo owner nếu được cung cấp
-    if (qOwner) {
-      results = results.filter(item => item.owner.toLowerCase() === qOwner);
-    }
-
-    // Cập nhật cache
-    setCache({ ts: now, data: results, ttl: 10 });
-
-    return res.json({ 
-      fromCache: false, 
-      count: results.length, 
-      items: results,
-      total
+    console.log(`✅ [CONTRIBUTIONS] Returned ${items.length} items`);
+    return res.json({
+      items,
+      count: items.length,
+      message: `Found ${items.length} datasets with versioning`,
     });
   } catch (err) {
-    console.error("Error in GET /contributions:", err);
-    return res.status(500).json({ 
-      error: "Cannot read contract data", 
-      detail: err.toString() 
+    console.error("❌ Error reading contributions:", err);
+    return res.status(500).json({
+      error: "Failed to read contributions",
+      detail: err.message,
     });
+  }
+});
+
+/**
+ * POST /contributions
+ * Thêm contribution mới
+ */
+router.post("/", (req, res) => {
+  try {
+    const { hash, owner, datasetName, description, dataType, fileSize, license } = req.body;
+
+    if (!hash || !owner) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    let metadata = { items: [] };
+
+    if (fs.existsSync(metadataPath)) {
+      const data = fs.readFileSync(metadataPath, "utf8");
+      metadata = JSON.parse(data);
+    }
+
+    const newItem = {
+      id: metadata.items.length,
+      hash,
+      owner,
+      timestamp: Math.floor(Date.now() / 1000),
+      metadata: {
+        datasetName: datasetName || "Unnamed",
+        description: description || "",
+        dataType: dataType || "raw",
+        fileSize: fileSize || 0,
+        license: license || "CC0",
+      }
+    };
+
+    metadata.items.push(newItem);
+    fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
+
+    return res.json({ success: true, id: newItem.id });
+  } catch (err) {
+    console.error("Error in POST /contributions:", err);
+    return res.status(500).json({ error: "Failed to save contribution" });
   }
 });
 

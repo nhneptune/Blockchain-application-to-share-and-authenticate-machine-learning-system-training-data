@@ -7,6 +7,8 @@ const uploadRouter = require("./routes/upload");
 const contributionsRouter = require("./routes/contributions");
 const mlRouter = require("./routes/ml");
 const healthRouter = require("./routes/health");
+const versionsRouter = require("./routes/versions");
+const debugRouter = require("./routes/debug");
 
 // Initialize app
 const app = express();
@@ -24,8 +26,14 @@ app.use("/upload", uploadRouter);
 // Blockchain contributions
 app.use("/contributions", contributionsRouter);
 
+// Versioning
+app.use("/versions", versionsRouter);
+
 // Machine Learning
 app.use("/ml", mlRouter);
+
+// Debug routes
+app.use("/debug", debugRouter);
 
 // ==================== START SERVER ====================
 
@@ -36,6 +44,11 @@ app.listen(PORT, () => {
   console.log(`   GET  /health`);
   console.log(`   POST /upload`);
   console.log(`   GET  /contributions`);
+  console.log(`   POST /versions/create`);
+  console.log(`   GET  /versions/all`);
+  console.log(`   GET  /versions/:dataId`);
+  console.log(`   GET  /versions/:dataId/latest`);
+  console.log(`   POST /versions/register-on-blockchain`);
   console.log(`   POST /ml/train`);
   console.log(`PID: ${process.pid}`);
 });

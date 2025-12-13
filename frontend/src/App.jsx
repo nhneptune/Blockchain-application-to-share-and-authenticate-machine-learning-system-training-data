@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Routes, Route, useNavigate } from "react-router-dom"; // Thêm useNavigate
+import { Routes, Route, useNavigate } from "react-router-dom";
 import Layout from "./Layout";
 import ConnectWallet from "./ConnectWallet";
 import RegisterData from "./RegisterData";
 import UploadFile from "./UploadFile";
+import UpdateData from "./UpdateData";
 import ContributionsTable from "./ContributionsTable";
+import VersionsBrowser from "./VersionsBrowser";
 import "./App.css";
 
 // --- Trang Dashboard (Trang chủ) ---
@@ -96,7 +98,15 @@ function App() {
           </div>
         } />
 
-        {/* TRANG 3: Register Metadata */}
+        {/* TRANG 3: Update Data */}
+        <Route path="update" element={
+          <div>
+            <h2 className="page-title">🔄 Update Data</h2>
+            <UpdateData walletAddress={account} />
+          </div>
+        } />
+
+        {/* TRANG 4: Register Metadata */}
         <Route path="register" element={
           <div>
             <h2 className="page-title">📝 Register Metadata</h2>
@@ -110,7 +120,6 @@ function App() {
                 </div>
               ) : (
                 <RegisterData
-                  // account={account} -> RegisterData tự lấy từ metamask, nhưng truyền vào cũng không sao
                   verifiedHash={verifiedHash}
                   uploadData={uploadData}
                 />
@@ -119,7 +128,18 @@ function App() {
           </div>
         } />
 
-        {/* TRANG 4: History Table */}
+        {/* TRANG 5: Versions Browser */}
+        <Route path="versions" element={
+          <div>
+            <h2 className="page-title">📜 Dataset versions</h2>
+            <div className="vitality-card">
+              <p className="sub-text">Xem tất cả version của các dataset.</p>
+              <VersionsBrowser />
+            </div>
+          </div>
+        } />
+
+        {/* TRANG 6: History Table */}
         <Route path="history" element={
           <div>
             <ContributionsTable />

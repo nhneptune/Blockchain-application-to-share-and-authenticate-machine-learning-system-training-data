@@ -36,23 +36,23 @@ export default function Layout({ account, handleLogout }) {
 
           </NavLink>
 
-
-
           <NavLink to="/upload" className={({ isActive }) => (isActive ? "menu-item active" : "menu-item")}>
 
             <span>📤</span> Upload Data
 
           </NavLink>
 
+          <NavLink to="/update" className={({ isActive }) => (isActive ? "menu-item active" : "menu-item")}>
 
-
-          <NavLink to="/register" className={({ isActive }) => (isActive ? "menu-item active" : "menu-item")}>
-
-            <span>📝</span> Register Meta
+            <span>🔄</span> Update Data
 
           </NavLink>
 
+          <NavLink to="/versions" className={({ isActive }) => (isActive ? "menu-item active" : "menu-item")}>
 
+            <span>📜</span> Versions
+
+          </NavLink>
 
           <NavLink to="/history" className={({ isActive }) => (isActive ? "menu-item active" : "menu-item")}>
 

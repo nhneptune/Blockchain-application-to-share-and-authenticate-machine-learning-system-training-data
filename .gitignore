@@ -26,6 +26,7 @@ backend/uploads/
 backend/temp/
 backend/models/
 backend/metadata.json
+backend/versions.json
 backend/DataRegistry.json
 
 # Blockchain (Solidity + Hardhat)

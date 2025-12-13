@@ -45,10 +45,18 @@ export default function RegisterData({ verifiedHash, uploadData }) {
       
       setStatus(`🔗 Network: ${network.name} | Ví: ${signerAddress}`);
 
-      const contract = new ethers.Contract(
+      // Create contract instances
+      const contractWithSigner = new ethers.Contract(
         addresses.DataRegistry,
-        contractABI.abi, // Đảm bảo đúng cấu trúc file JSON ABI
+        contractABI.abi,
         signer
+      );
+      
+      // For read-only calls like count()
+      const contractWithProvider = new ethers.Contract(
+        addresses.DataRegistry,
+        contractABI.abi,
+        provider
       );
 
       // Xử lý Hash để đảm bảo đúng định dạng bytes32 (thêm 0x nếu thiếu)
@@ -68,7 +76,7 @@ export default function RegisterData({ verifiedHash, uploadData }) {
       const dsLicense = metadataInfo?.metadata?.license || "CC0";
 
       // Gọi smart contract
-      const tx = await contract.registerData(
+      const tx = await contractWithSigner.registerData(
         hashBytes32,
         dsName,
         dsDesc,
@@ -84,9 +92,36 @@ export default function RegisterData({ verifiedHash, uploadData }) {
       console.log("Receipt:", receipt);
 
       if (receipt.status === 1) {
-        setStatus(`✔ Thành công! Block: ${receipt.blockNumber}`);
+        setStatus(`✔ Dataset registered on blockchain! Block: ${receipt.blockNumber}`);
+        
+        // Get dataId từ contract count (dataId = count - 1)
+        let dataId = null;
+        try {
+          const count = await contractWithProvider.count();
+          dataId = Number(count) - 1;
+          console.log("✅ Dataset count:", count, "=> dataId:", dataId);
+        } catch (countErr) {
+          console.error("❌ Error getting count:", countErr.message);
+          try {
+            const iface = new ethers.Interface(contractABI.abi);
+            for (const log of receipt.logs || []) {
+              try {
+                const parsed = iface.parseLog(log);
+                if (parsed && parsed.name === "DataRegistered") {
+                  dataId = Number(parsed.args[0]);
+                  console.log("✅ Extracted dataId from event:", dataId);
+                  break;
+                }
+              } catch (e) {
+                // Continue
+              }
+            }
+          } catch (parseErr) {
+            console.error("❌ Error parsing logs:", parseErr.message);
+          }
+        }
       } else {
-        setStatus(`❌ Transaction thất bại.`);
+        setStatus(`❌ Transaction failed.`);
       }
 
       setLoading(false);
