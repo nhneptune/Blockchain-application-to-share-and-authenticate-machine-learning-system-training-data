@@ -28,6 +28,8 @@ backend/models/
 backend/metadata.json
 backend/versions.json
 backend/DataRegistry.json
+backend/contributions.json
+backend/training.json
 
 # Blockchain (Solidity + Hardhat)
 blockchain/node_modules/
