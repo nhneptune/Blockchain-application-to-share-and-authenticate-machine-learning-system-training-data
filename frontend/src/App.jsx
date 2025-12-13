@@ -7,6 +7,7 @@ import UploadFile from "./UploadFile";
 import UpdateData from "./UpdateData";
 import ContributionsTable from "./ContributionsTable";
 import VersionsBrowser from "./VersionsBrowser";
+import TrainModel from "./TrainModel";
 import "./App.css";
 
 // --- Trang Dashboard (Trang chủ) ---
@@ -143,6 +144,13 @@ function App() {
         <Route path="history" element={
           <div>
             <ContributionsTable />
+          </div>
+        } />
+
+        {/* TRANG 7: Train Model */}
+        <Route path="train" element={
+          <div>
+            <TrainModel walletAddress={account} />
           </div>
         } />
 

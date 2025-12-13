@@ -60,6 +60,12 @@ export default function Layout({ account, handleLogout }) {
 
           </NavLink>
 
+          <NavLink to="/train" className={({ isActive }) => (isActive ? "menu-item active" : "menu-item")}>
+
+            <span>🤖</span> Train Model
+
+          </NavLink>
+
         </nav>
 
 

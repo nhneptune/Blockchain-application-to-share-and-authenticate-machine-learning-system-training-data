@@ -1,6 +1,7 @@
 const express = require("express");
 const { spawn } = require("child_process");
 const path = require("path");
+const trainingDB = require("../trainingDB");
 
 const router = express.Router();
 
@@ -10,8 +11,9 @@ const router = express.Router();
 function runPythonTrain(args = []) {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(__dirname, "..", "py", "train.py");
+    const backendRoot = path.join(__dirname, "..");
     const py = spawn("python3", [scriptPath, ...args], { 
-      cwd: path.dirname(scriptPath) 
+      cwd: backendRoot  // Set working directory to backend root, not py folder
     });
 
     let stdout = "";
@@ -55,25 +57,136 @@ function runPythonTrain(args = []) {
  * Body:
  *   {
  *     mode: "iris" | "csv",
- *     files: ["path/to/file1.csv", "path/to/file2.csv"]  // only for csv mode
+ *     files: ["path/to/file1.csv", "path/to/file2.csv"],  // only for csv mode
+ *     trainerAddress: "0x...",  // wallet address của người train
+ *     datasetName: "Dataset name",
+ *     datasetHash: "0x..." // SHA-256 hash từ blockchain
  *   }
  */
 router.post("/train", async (req, res) => {
   try {
-    const mode = (req.body && req.body.mode) || "iris";
-    const files = (req.body && req.body.files) || [];
+    const { mode = "iris", files = [], trainerAddress, datasetName, datasetHash } = req.body;
 
-    const args = [];
-    args.push("--mode", mode);
-    if (mode === "csv" && files.length > 0) {
-      args.push("--files", ...files);
+    // Validate required fields
+    if (!trainerAddress) {
+      return res.status(400).json({ ok: false, error: "trainerAddress is required" });
     }
 
-    const result = await runPythonTrain(args);
-    // result contains accuracy, model_path, report, confusion_matrix, etc.
-    return res.json({ ok: true, result });
+    // Convert file paths to absolute paths
+    const absoluteFiles = files.map(f => {
+      if (path.isAbsolute(f)) {
+        return f;
+      }
+      // Resolve relative to backend root (process.cwd())
+      const backendRoot = path.resolve(__dirname, "..");
+      return path.resolve(backendRoot, f);
+    });
+
+    // Create training record
+    const trainingRecord = trainingDB.createTrainingRecord(
+      trainerAddress,
+      datasetName || "Unnamed Dataset",
+      datasetHash || "unknown",
+      mode,
+      absoluteFiles
+    );
+
+    // Update status to 'training'
+    trainingDB.updateTrainingStatus(trainingRecord.trainingId, "training");
+
+    // Prepare args for Python script
+    const args = [];
+    args.push("--mode", mode);
+    if (mode === "csv" && absoluteFiles.length > 0) {
+      args.push("--files", ...absoluteFiles);
+    }
+
+    // Run Python training in background
+    runPythonTrain(args)
+      .then((result) => {
+        // Training success
+        trainingDB.updateTrainingCompleted(trainingRecord.trainingId, result);
+        console.log(`✅ Training ${trainingRecord.trainingId} completed`);
+      })
+      .catch((err) => {
+        // Training failed
+        trainingDB.updateTrainingFailed(trainingRecord.trainingId, err.message);
+        console.error(`❌ Training ${trainingRecord.trainingId} failed:`, err.message);
+      });
+
+    // Return immediately with training record ID
+    return res.json({
+      ok: true,
+      trainingId: trainingRecord.trainingId,
+      status: "training",
+      message: "Training started in background",
+    });
   } catch (err) {
     console.error("Train error:", err);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/**
+ * GET /train/:trainingId
+ * Lấy status và kết quả training
+ */
+router.get("/train/:trainingId", (req, res) => {
+  try {
+    const trainingId = parseInt(req.params.trainingId);
+    const record = trainingDB.getTrainingById(trainingId);
+    
+    if (!record) {
+      return res.status(404).json({ ok: false, error: "Training record not found" });
+    }
+    
+    return res.json({ ok: true, training: record });
+  } catch (err) {
+    console.error("Get training error:", err);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/**
+ * GET /train/trainer/:address
+ * Lấy toàn bộ training records của một trainer
+ */
+router.get("/trainer/:address", (req, res) => {
+  try {
+    const trainerAddress = req.params.address;
+    const records = trainingDB.getTrainingByTrainer(trainerAddress);
+    return res.json({ ok: true, trainings: records });
+  } catch (err) {
+    console.error("Get trainer trainings error:", err);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/**
+ * GET /train/dataset/:datasetHash
+ * Lấy toàn bộ training records cho một dataset
+ */
+router.get("/dataset/:datasetHash", (req, res) => {
+  try {
+    const datasetHash = req.params.datasetHash;
+    const records = trainingDB.getTrainingByDataset(datasetHash);
+    return res.json({ ok: true, trainings: records });
+  } catch (err) {
+    console.error("Get dataset trainings error:", err);
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/**
+ * GET /train/all
+ * Lấy tất cả training records
+ */
+router.get("/all", (req, res) => {
+  try {
+    const records = trainingDB.getAllTraining();
+    return res.json({ ok: true, trainings: records });
+  } catch (err) {
+    console.error("Get all trainings error:", err);
     return res.status(500).json({ ok: false, error: err.message });
   }
 });

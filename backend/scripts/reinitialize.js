@@ -82,10 +82,12 @@ function reinitialize() {
 
   console.log("📋 Các hành động sẽ được thực hiện:");
   console.log("  1. Xóa metadata.json");
-  console.log("  2. Xóa folder uploads/");
-  console.log("  3. Xóa versions.json (nếu có)");
-  console.log("  4. Tạo metadata.json mới (rỗng)");
-  console.log("  5. Tạo folder uploads/ mới");
+  console.log("  2. Xóa contributions.json");
+  console.log("  3. Xóa training.json (training history)");
+  console.log("  4. Xóa folder uploads/");
+  console.log("  5. Xóa versions.json (nếu có)");
+  console.log("  6. Tạo metadata.json mới (rỗng)");
+  console.log("  7. Tạo folder uploads/ mới");
 
   console.log("\n⚠️  Chú ý: Hành động này không thể hoàn tác!\n");
 
@@ -95,6 +97,8 @@ function reinitialize() {
 
       // Xóa dữ liệu cũ
       deleteFile("metadata.json");
+      deleteFile("contributions.json");
+      deleteFile("training.json");
       deleteFile("versions.json");
       deleteFolder("uploads");
 
