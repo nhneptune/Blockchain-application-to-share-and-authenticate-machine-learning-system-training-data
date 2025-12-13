@@ -92,7 +92,7 @@ export default function UploadFile({ onHashVerified, onUploadComplete, walletAdd
           hash: data.hash,
           filename: data.filename,
           fileSize: data.fileSize,
-          metadataId: data.metadataId,
+          datasetId: data.datasetId, // 🔥 Thêm datasetId để sử dụng khi register blockchain
           metadata: { ...metadata }, // Dùng metadata hiện tại để đảm bảo tính nhất quán
         });
       }

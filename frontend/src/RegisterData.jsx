@@ -94,30 +94,73 @@ export default function RegisterData({ verifiedHash, uploadData }) {
       if (receipt.status === 1) {
         setStatus(`✔ Dataset registered on blockchain! Block: ${receipt.blockNumber}`);
         
-        // Get dataId từ contract count (dataId = count - 1)
-        let dataId = null;
-        try {
-          const count = await contractWithProvider.count();
-          dataId = Number(count) - 1;
-          console.log("✅ Dataset count:", count, "=> dataId:", dataId);
-        } catch (countErr) {
-          console.error("❌ Error getting count:", countErr.message);
+        // 🔥 Lấy datasetId từ uploadData (truyền từ UploadFile component)
+        // Đây là ID trong metadataDB, không phải blockchain ID
+        let dataId = metadataInfo?.datasetId;
+        
+        if (!dataId && dataId !== 0) {
+          console.warn("⚠️ datasetId not found in uploadData, trying to get from blockchain...");
+          // Fallback: Thử lấy từ blockchain (không chính xác nhưng có thể dùng làm backup)
           try {
-            const iface = new ethers.Interface(contractABI.abi);
-            for (const log of receipt.logs || []) {
-              try {
-                const parsed = iface.parseLog(log);
-                if (parsed && parsed.name === "DataRegistered") {
-                  dataId = Number(parsed.args[0]);
-                  console.log("✅ Extracted dataId from event:", dataId);
-                  break;
+            const count = await contractWithProvider.count();
+            dataId = Number(count) - 1;
+            console.log("✅ Dataset count:", count, "=> dataId:", dataId);
+          } catch (countErr) {
+            console.error("❌ Error getting count:", countErr.message);
+            try {
+              const iface = new ethers.Interface(contractABI.abi);
+              for (const log of receipt.logs || []) {
+                try {
+                  const parsed = iface.parseLog(log);
+                  if (parsed && parsed.name === "DataRegistered") {
+                    dataId = Number(parsed.args[0]);
+                    console.log("✅ Extracted dataId from event:", dataId);
+                    break;
+                  }
+                } catch (e) {
+                  // Continue
                 }
-              } catch (e) {
-                // Continue
               }
+            } catch (parseErr) {
+              console.error("❌ Error parsing logs:", parseErr.message);
             }
-          } catch (parseErr) {
-            console.error("❌ Error parsing logs:", parseErr.message);
+          }
+        } else {
+          console.log("✅ Using datasetId from uploadData:", dataId);
+        }
+
+        // 🔄 CÁCH 1: Ghi vào Contribution sau khi blockchain register thành công
+        if (dataId !== null) {
+          try {
+            setStatus(`📝 Đang ghi vào Contribution...`);
+            const contributionRes = await fetch(
+              "http://localhost:4000/contributions/register",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  datasetId: dataId,
+                  blockchainId: receipt.blockNumber,
+                  type: "upload", // 🔥 Thêm type để phân biệt upload vs update
+                }),
+              }
+            );
+
+            const contributionData = await contributionRes.json();
+            if (contributionRes.ok) {
+              setStatus(
+                `✔ Hoàn tất! Dataset đã được ghi vào Contribution\nDatasetId: ${dataId}\nBlock: ${receipt.blockNumber}`
+              );
+            } else {
+              setStatus(
+                `⚠️ Blockchain register OK nhưng lỗi ghi Contribution\n${contributionData.error}`
+              );
+            }
+          } catch (err) {
+            console.error("Error registering contribution:", err);
+            setStatus(
+              `⚠️ Blockchain register OK nhưng lỗi ghi Contribution\n${err.message}`
+            );
           }
         }
       } else {

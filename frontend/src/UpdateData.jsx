@@ -188,6 +188,41 @@ export default function UpdateData({ walletAddress }) {
 
       if (receipt.status === 1) {
         setRegisterStatus(`✔ Version registered on blockchain! Block: ${receipt.blockNumber}`);
+        
+        // 🔥 Ghi vào Contribution sau khi blockchain confirm
+        if (selectedDataset) {
+          try {
+            setRegisterStatus(`📝 Đang ghi vào Contribution...`);
+            const contributionRes = await fetch(
+              "http://localhost:4000/contributions/register",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  datasetId: selectedDataset.id,
+                  blockchainId: receipt.blockNumber,
+                  type: "update", // 🔥 Phân biệt: update thay vì upload
+                }),
+              }
+            );
+
+            const contributionData = await contributionRes.json();
+            if (contributionRes.ok) {
+              setRegisterStatus(
+                `✔ Hoàn tất! Version mới đã được ghi vào Contribution\nDatasetId: ${selectedDataset.id}\nBlock: ${receipt.blockNumber}`
+              );
+            } else {
+              setRegisterStatus(
+                `⚠️ Blockchain register OK nhưng lỗi ghi Contribution\n${contributionData.error}`
+              );
+            }
+          } catch (err) {
+            console.error("Error registering contribution:", err);
+            setRegisterStatus(
+              `⚠️ Blockchain register OK nhưng lỗi ghi Contribution\n${err.message}`
+            );
+          }
+        }
       } else {
         setRegisterStatus(`❌ Transaction thất bại`);
       }

@@ -67,6 +67,9 @@ export default function ContributionsTable() {
                        <div style={{background:'white', padding:'15px', borderRadius:'12px', border:'1px solid #edf2f7'}}>
                           <p><strong>Hash:</strong> {item.hash}</p>
                           <p><strong>Desc:</strong> {item.metadata?.description}</p>
+                          <p style={{color:'#666', fontSize:'12px', marginTop:'15px', paddingTop:'15px', borderTop:'1px solid #eee'}}>
+                            <strong>Do owner</strong> <code style={{backgroundColor:'#f0f0f0', padding:'2px 6px', borderRadius:'3px'}}>{item.owner.substring(0, 10)}...</code> <strong>{item.type === 'update' ? '🔄 update' : '📤 upload'}</strong>
+                          </p>
                        </div>
                     </td>
                   </tr>

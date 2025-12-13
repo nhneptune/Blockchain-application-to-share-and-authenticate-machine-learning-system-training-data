@@ -171,18 +171,23 @@ router.post("/blockchain-id", (req, res) => {
 
 /**
  * GET /versions/all
- * Lấy tất cả datasets
+ * Lấy tất cả datasets đã được đăng ký lên blockchain
+ * CÁCH 1: Chỉ trả về datasets có blockchainId (đã xác thực blockchain)
  */
 router.get("/all", (req, res) => {
   try {
-    console.log("🔍 [VERSIONS] GET /all - Fetching all datasets from metadataDB");
-    const datasets = getAllDatasets();
-    console.log(`✅ Found ${datasets.length} datasets`);
+    console.log("🔍 [VERSIONS] GET /all - Fetching all blockchain-verified datasets from metadataDB");
+    const allDatasets = getAllDatasets();
+    
+    // Filter: Chỉ lấy datasets có blockchainId (đã đăng ký blockchain)
+    const verifiedDatasets = allDatasets.filter((d) => d.blockchainId !== null && d.blockchainId !== undefined);
+    
+    console.log(`✅ Found ${allDatasets.length} total datasets, ${verifiedDatasets.length} blockchain-verified`);
 
     return res.json({
       success: true,
-      totalDatasets: datasets.length,
-      items: datasets.map((d) => {
+      totalDatasets: verifiedDatasets.length,
+      items: verifiedDatasets.map((d) => {
         const latestVersion = d.versions[d.versions.length - 1];
         return {
           id: d.id,
