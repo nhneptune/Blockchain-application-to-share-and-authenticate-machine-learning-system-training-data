@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+interface IERC20 {
+    function transfer(address to, uint256 amount) external returns (bool);
+    function mintReward(address to, uint256 amount) external;
+}
+
 contract DataRegistry {
+    address public tokenAddress;
+    IERC20 public mlDataToken;
     struct DataInfo {
         address owner;
         string hash;
@@ -86,6 +93,27 @@ contract DataRegistry {
         uint256 amount,
         uint256 timestamp
     );
+
+    event TokenAddressSet(address indexed newTokenAddress);
+
+    /**
+     * @dev Constructor - initialize with token address
+     */
+    constructor(address _tokenAddress) {
+        require(_tokenAddress != address(0), "Invalid token address");
+        tokenAddress = _tokenAddress;
+        mlDataToken = IERC20(_tokenAddress);
+    }
+
+    /**
+     * @dev Set token address (in case of token migration)
+     */
+    function setTokenAddress(address _newTokenAddress) external {
+        require(_newTokenAddress != address(0), "Invalid token address");
+        tokenAddress = _newTokenAddress;
+        mlDataToken = IERC20(_newTokenAddress);
+        emit TokenAddressSet(_newTokenAddress);
+    }
 
     function registerData(
         string calldata _hash,
@@ -257,17 +285,13 @@ contract DataRegistry {
             require(contributors[i].addr != _contributor, "Contributor already exists");
         }
 
-        // Tính tổng percentage hiện tại
+        // Calculate total percentage of existing contributors
         uint256 totalPercentage = 0;
         for (uint i = 0; i < contributors.length; i++) {
             totalPercentage += contributors[i].percentage;
         }
 
-        // Thêm owner's percentage (mặc định)
-        if (contributors.length == 0) {
-            totalPercentage += 100; // Owner có 100% nếu chưa có contributor
-        }
-
+        // Check if adding this contributor would exceed 100%
         require(totalPercentage + _percentage <= 100, "Total percentage exceeds 100%");
 
         contributors.push(Contributor({
@@ -344,6 +368,7 @@ contract DataRegistry {
 
     /**
      * Cập nhật reward cho contributor
+     * Gọi token contract để mint và transfer token thực
      */
     function updateContributorReward(
         uint256 _dataId,
@@ -352,17 +377,46 @@ contract DataRegistry {
     ) external {
         require(_dataId < dataList.length, "Invalid data ID");
         require(dataList[_dataId].owner == msg.sender, "Only owner can update rewards");
+        require(_amount > 0, "Reward amount must be greater than 0");
 
         Contributor[] storage contributors = dataContributors[_dataId];
         for (uint i = 0; i < contributors.length; i++) {
             if (contributors[i].addr == _contributor) {
                 contributors[i].totalReward += _amount;
+                
+                // Mint token rewards
+                mlDataToken.mintReward(_contributor, _amount);
+                
                 emit RewardDistributed(_dataId, _contributor, _amount, block.timestamp);
                 return;
             }
         }
 
         revert("Contributor not found");
+    }
+
+    /**
+     * Distribute rewards batch để tiết kiệm gas
+     * Tính toán và transfer reward cho tất cả contributors một lần
+     */
+    function distributeRewardsBatch(
+        uint256 _dataId,
+        uint256 _rewardPool
+    ) external {
+        require(_dataId < dataList.length, "Invalid data ID");
+        require(dataList[_dataId].owner == msg.sender, "Only owner can distribute rewards");
+        require(_rewardPool > 0, "Reward pool must be greater than 0");
+
+        Contributor[] storage contributors = dataContributors[_dataId];
+        
+        for (uint i = 0; i < contributors.length; i++) {
+            uint256 rewardAmount = (_rewardPool * contributors[i].percentage) / 100;
+            if (rewardAmount > 0) {
+                contributors[i].totalReward += rewardAmount;
+                mlDataToken.mintReward(contributors[i].addr, rewardAmount);
+                emit RewardDistributed(_dataId, contributors[i].addr, rewardAmount, block.timestamp);
+            }
+        }
     }
 
     /**

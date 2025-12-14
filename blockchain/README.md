@@ -6,6 +6,7 @@
 - npm or yarn
 - MetaMask wallet (for testnet)
 - Alchemy account (for RPC endpoint)
+- OpenZeppelin Contracts v5.0.0+ (ERC-20 token standard)
 
 ## 🚀 Quick Start
 
@@ -30,6 +31,9 @@ nano .env
 ```env
 SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_KEY
 PRIVATE_KEY=your_private_key_here
+MLDATA_TOKEN_ADDRESS=0x0000000000000000000000000000000000000000  # Will be set after deploy
+DATA_REGISTRY_ADDRESS=0x0000000000000000000000000000000000000000  # Will be set after deploy
+RECIPIENT_ADDRESS=0x0000000000000000000000000000000000000000 #Your wallet address
 ```
 
 ### 3. Get Alchemy API Key
@@ -59,23 +63,40 @@ PRIVATE_KEY=paste_key_here
 ### 5. Deploy Smart Contracts
 
 ```bash
-# Deploy to Sepolia testnet
+# Deploy to Sepolia testnet (MLDataToken + DataRegistry)
 npx hardhat run scripts/deploy.js --network sepolia
 ```
 
 Expected output:
 ```
-DataRegistry deployed at: .....
+✅ MLDataToken deployed at: 0x...
+✅ DataRegistry deployed at: 0x...
 ```
 
-### 6. Copy Contract Address to Backend
-
-After deployment, copy the contract address and add to `backend/.env`:
-
+**Copy both addresses to `backend/.env`:**
 ```env
-DATAREGISTRY_ADDRESS=0x...  # Copy from deploy output
+MLDATA_TOKEN_ADDRESS=0x...      # ERC-20 token address
+DATAREGISTRY_ADDRESS=0x...      # Main contract address
+```
+**Copy dataregistry addresses to `frontend/src/contracts/contract-address.json`:**
+```
+{
+  "DataRegistry": "0xYourDataregistryDeployAddress"
+}
+
 ```
 
+### 6. Setup Authorization
+
+After deployment, run authorization script to allow DataRegistry to mint tokens:
+
+```bash
+npx hardhat run scripts/setupRegistry.js --network sepolia
+```
+
+This grants `DataRegistry` permission to call `mintReward()` on `MLDataToken`.
+
+---
 ---
 
 ## 📁 Project Structure
@@ -83,11 +104,14 @@ DATAREGISTRY_ADDRESS=0x...  # Copy from deploy output
 ```
 blockchain/
 ├── contracts/
-│   ├── DataRegistry.sol      # Main contract
+│   ├── MLDataToken.sol       # ERC-20 reward token
+│   ├── DataRegistry.sol      # Main registry contract
 │   └── Lock.sol              # Sample contract
 ├── scripts/
-│   ├── deploy.js             # Deployment script
-│   └── checkBalance.js        # Check account balance
+│   ├── deploy.js             # Deploy both contracts
+│   ├── setupRegistry.js       # Authorize DataRegistry for minting
+│   ├── checkBalance.js        # Check account balance
+│   └── fixTokenAddress.js     # Emergency fix for token address
 ├── test/
 │   ├── DataRegistry.js
 │   └── Lock.js
@@ -108,7 +132,9 @@ blockchain/
 | `hardhat.config.js` | Hardhat configuration (reads from `.env`) | ✅ Commit |
 | `.env` | Environment variables with secret data | ❌ Ignore |
 | `.env.example` | Template for `.env` setup | ✅ Commit |
-| `contracts/*.sol` | Smart contract source code | ✅ Commit |
-| `scripts/*.js` | Deployment and utility scripts | ✅ Commit |
+| `contracts/MLDataToken.sol` | ERC-20 reward token contract | ✅ Commit |
+| `contracts/DataRegistry.sol` | Dataset & royalty management contract | ✅ Commit |
+| `scripts/deploy.js` | Deploy both contracts to testnet | ✅ Commit |
+| `scripts/setupRegistry.js` | Grant minting permission to DataRegistry | ✅ Commit |
 
 

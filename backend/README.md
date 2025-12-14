@@ -33,6 +33,7 @@ nano .env
 PORT=4000
 SEPOLIA_RPC_URL=http://127.0.0.1:8545
 DATAREGISTRY_ADDRESS=0x...  # Your deployed contract address
+MLDATA_TOKEN_ADDRESS=0x...  # Your mldata token adrress
 ```
 
 ### 3. Copy DataRegistry.json file

@@ -10,6 +10,8 @@ export default function RoyaltyManager({ datasetId, ownerAddress, walletAddress 
   const [remainingPercentage, setRemainingPercentage] = useState(100);
   const [usageHistory, setUsageHistory] = useState([]);
   const [showUsageHistory, setShowUsageHistory] = useState(false);
+  const [editingContributor, setEditingContributor] = useState(null);
+  const [editingPercentage, setEditingPercentage] = useState(0);
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:4000";
 
@@ -129,7 +131,104 @@ export default function RoyaltyManager({ datasetId, ownerAddress, walletAddress 
     }
   };
 
+  const updateContributorPercentage = async () => {
+    if (!editingContributor || editingPercentage < 1 || editingPercentage > 100) {
+      setMessage("❌ Tỷ lệ phải từ 1 đến 100%");
+      setMessageType("error");
+      return;
+    }
+
+    setLoading(true);
+    setMessage("");
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/royalty/${datasetId}/update-contributor/${editingContributor}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            percentage: parseInt(editingPercentage),
+            ownerAddress: walletAddress,
+          }),
+        }
+      );
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessage(`✅ Đã cập nhật ${editingContributor.substring(0, 10)}... thành ${editingPercentage}%`);
+        setMessageType("success");
+        setEditingContributor(null);
+        setEditingPercentage(0);
+        fetchContributors();
+        fetchUsageHistory();
+      } else {
+        setMessage(`❌ ${data.error}`);
+        setMessageType("error");
+      }
+    } catch (err) {
+      setMessage(`❌ Lỗi: ${err.message}`);
+      setMessageType("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const distributeRewards = async () => {
+    if (!window.confirm("Bạn chắc chắn muốn phân phối reward cho tất cả contributors?")) {
+      return;
+    }
+
+    // Calculate total reward pool from usage history
+    const totalRewardPool = usageHistory.reduce((sum, usage) => sum + (usage.rewardPool || 0), 0);
+    
+    if (totalRewardPool <= 0) {
+      setMessage("❌ Không có reward nào để phân phối. Vui lòng đảm bảo dataset có lịch sử sử dụng.");
+      setMessageType("error");
+      return;
+    }
+
+    setLoading(true);
+    setMessage("");
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/royalty/${datasetId}/distribute-rewards`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            rewardPool: totalRewardPool,
+            ownerAddress: walletAddress,
+          }),
+        }
+      );
+
+      const data = await res.json();
+      if (res.ok) {
+        setMessage(`✅ Đã phân phối reward thành công! Tổng reward: ${totalRewardPool}. Các contributor sẽ nhận token.`);
+        setMessageType("success");
+        fetchContributors();
+        fetchUsageHistory();
+      } else {
+        setMessage(`❌ ${data.error || "Lỗi phân phối reward"}`);
+        setMessageType("error");
+      }
+    } catch (err) {
+      setMessage(`❌ Lỗi: ${err.message}`);
+      setMessageType("error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const isOwner = walletAddress?.toLowerCase() === ownerAddress?.toLowerCase();
+
+  useEffect(() => {
+    console.log("🔍 RoyaltyManager Debug:");
+    console.log("   ownerAddress:", ownerAddress);
+    console.log("   walletAddress:", walletAddress);
+    console.log("   isOwner:", isOwner);
+    console.log("   remainingPercentage:", remainingPercentage);
+  }, [ownerAddress, walletAddress, isOwner, remainingPercentage]);
 
   return (
     <div style={{ marginTop: "30px", padding: "20px", border: "1px solid #ddd", borderRadius: "8px" }}>
@@ -182,6 +281,9 @@ export default function RoyaltyManager({ datasetId, ownerAddress, walletAddress 
                     }}
                   >
                     {contributor.address?.substring(0, 12)}...
+                    {contributor.address?.toLowerCase() === ownerAddress?.toLowerCase() && (
+                      <span style={{ marginLeft: "5px", background: "#2196F3", color: "white", padding: "2px 6px", borderRadius: "3px", fontSize: "10px" }}>Owner</span>
+                    )}
                   </td>
                   <td
                     style={{
@@ -192,7 +294,19 @@ export default function RoyaltyManager({ datasetId, ownerAddress, walletAddress 
                       color: "#2196F3",
                     }}
                   >
-                    {contributor.percentage}%
+                    {editingContributor === contributor.address ? (
+                      <input
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={editingPercentage}
+                        onChange={(e) => setEditingPercentage(parseInt(e.target.value))}
+                        style={{ width: "50px", padding: "4px" }}
+                        autoFocus
+                      />
+                    ) : (
+                      contributor.percentage + "%"
+                    )}
                   </td>
                   <td
                     style={{
@@ -219,22 +333,75 @@ export default function RoyaltyManager({ datasetId, ownerAddress, walletAddress 
                   </td>
                   {isOwner && (
                     <td style={{ border: "1px solid #ddd", padding: "10px", textAlign: "center" }}>
-                      {contributor.address?.toLowerCase() !== ownerAddress?.toLowerCase() && (
-                        <button
-                          onClick={() => removeContributor(contributor.address)}
-                          style={{
-                            background: "#ff6b6b",
-                            color: "white",
-                            border: "none",
-                            padding: "5px 10px",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            fontSize: "12px",
-                          }}
-                          disabled={loading}
-                        >
-                          🗑️ Remove
-                        </button>
+                      {editingContributor === contributor.address ? (
+                        <div style={{ display: "flex", gap: "5px", justifyContent: "center" }}>
+                          <button
+                            onClick={updateContributorPercentage}
+                            style={{
+                              background: "#4CAF50",
+                              color: "white",
+                              border: "none",
+                              padding: "4px 8px",
+                              borderRadius: "3px",
+                              cursor: "pointer",
+                              fontSize: "11px",
+                            }}
+                            disabled={loading}
+                          >
+                            ✅ Lưu
+                          </button>
+                          <button
+                            onClick={() => setEditingContributor(null)}
+                            style={{
+                              background: "#999",
+                              color: "white",
+                              border: "none",
+                              padding: "4px 8px",
+                              borderRadius: "3px",
+                              cursor: "pointer",
+                              fontSize: "11px",
+                            }}
+                          >
+                            ✕ Hủy
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", gap: "5px", justifyContent: "center" }}>
+                          <button
+                            onClick={() => {
+                              setEditingContributor(contributor.address);
+                              setEditingPercentage(contributor.percentage);
+                            }}
+                            style={{
+                              background: "#2196F3",
+                              color: "white",
+                              border: "none",
+                              padding: "4px 8px",
+                              borderRadius: "3px",
+                              cursor: "pointer",
+                              fontSize: "11px",
+                            }}
+                          >
+                            ✏️ Chỉnh
+                          </button>
+                          {contributor.address?.toLowerCase() !== ownerAddress?.toLowerCase() && (
+                            <button
+                              onClick={() => removeContributor(contributor.address)}
+                              style={{
+                                background: "#ff6b6b",
+                                color: "white",
+                                border: "none",
+                                padding: "4px 8px",
+                                borderRadius: "3px",
+                                cursor: "pointer",
+                                fontSize: "11px",
+                              }}
+                              disabled={loading}
+                            >
+                              🗑️ Xóa
+                            </button>
+                          )}
+                        </div>
                       )}
                     </td>
                   )}
@@ -258,7 +425,7 @@ export default function RoyaltyManager({ datasetId, ownerAddress, walletAddress 
         >
           <h4 style={{ marginTop: 0 }}>➕ Thêm Contributor Mới</h4>
           <p style={{ color: "#666", fontSize: "12px" }}>
-            Phần trăm còn lại: <strong>{remainingPercentage}%</strong>
+            Phần trăm còn lại: <strong style={{ color: "#2196F3" }}>{remainingPercentage}%</strong>
           </p>
 
           <div style={{ marginBottom: "10px" }}>
@@ -313,6 +480,59 @@ export default function RoyaltyManager({ datasetId, ownerAddress, walletAddress 
           >
             {loading ? "⏳ Đang thêm..." : "➕ Thêm Contributor"}
           </button>
+        </div>
+      )}
+
+      {/* Warning when full */}
+      {isOwner && remainingPercentage <= 0 && (
+        <div
+          style={{
+            marginBottom: "20px",
+            padding: "15px",
+            backgroundColor: "#e8f5e9",
+            border: "1px solid #4caf50",
+            borderRadius: "4px",
+          }}
+        >
+          <h4 style={{ marginTop: 0, color: "#2e7d32" }}>✅ Đã phân phối 100% Contributors</h4>
+          <p style={{ color: "#2e7d32", fontSize: "12px", marginBottom: "15px" }}>
+            Các contributors đã được cấu hình đầy đủ! Nhấn nút dưới để phân phối rewards và minting token cho họ.
+          </p>
+          <button
+            onClick={distributeRewards}
+            disabled={loading}
+            style={{
+              padding: "10px 20px",
+              background: "#4CAF50",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: loading ? "not-allowed" : "pointer",
+              opacity: loading ? 0.6 : 1,
+              fontWeight: "bold",
+              fontSize: "14px",
+            }}
+          >
+            {loading ? "⏳ Đang phân phối..." : "💸 Phân Phối Reward"}
+          </button>
+        </div>
+      )}
+
+      {/* Warning when not full */}
+      {isOwner && remainingPercentage > 0 && (
+        <div
+          style={{
+            marginBottom: "20px",
+            padding: "15px",
+            backgroundColor: "#fff3cd",
+            border: "1px solid #ffc107",
+            borderRadius: "4px",
+          }}
+        >
+          <h4 style={{ marginTop: 0, color: "#856404" }}>⚠️ Chưa đủ 100% Contributors</h4>
+          <p style={{ color: "#856404", fontSize: "12px", marginBottom: 0 }}>
+            Còn lại <strong>{remainingPercentage}%</strong> chưa được phân phối. Phải cấu hình đầy đủ 100% contributor mới có thể phân phối reward.
+          </p>
         </div>
       )}
 
