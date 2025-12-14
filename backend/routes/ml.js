@@ -65,7 +65,7 @@ function runPythonTrain(args = []) {
  */
 router.post("/train", async (req, res) => {
   try {
-    const { mode = "iris", files = [], trainerAddress, datasetName, datasetHash } = req.body;
+    const { mode = "iris", model = "randomforest", files = [], trainerAddress, datasetName, datasetHash } = req.body;
 
     // Validate required fields
     if (!trainerAddress) {
@@ -97,6 +97,7 @@ router.post("/train", async (req, res) => {
     // Prepare args for Python script
     const args = [];
     args.push("--mode", mode);
+    args.push("--model", model);
     if (mode === "csv" && absoluteFiles.length > 0) {
       args.push("--files", ...absoluteFiles);
     }

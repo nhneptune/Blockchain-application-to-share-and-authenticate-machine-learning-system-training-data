@@ -3,14 +3,20 @@
 train.py
 
 Usage:
-  # 1) Use default Iris dataset:
-  python train.py --mode iris
+  # 1) Use default Iris dataset with RandomForest:
+  python train.py --mode iris --model randomforest
 
-  # 2) Use CSV files (each CSV must contain features columns and a 'label' column):
-  python train.py --mode csv --files /abs/path/to/file1.csv /abs/path/to/file2.csv
+  # 2) Use Iris with different models:
+  python train.py --mode iris --model svm
+  python train.py --mode iris --model gradientboosting
 
-Outputs JSON to stdout with keys: success, accuracy, report, n_samples, model_path
+  # 3) Use CSV files with specific model:
+  python train.py --mode csv --model svm --files /abs/path/to/file1.csv /abs/path/to/file2.csv
+
+Outputs JSON to stdout with keys: success, accuracy, report, n_samples, model_path, model_type
 Also saves model to ./models/model.pkl (relative to script path)
+
+Available models: randomforest (default), svm, gradientboosting
 """
 
 import argparse
@@ -22,7 +28,8 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradienBoostingClassifiert
+from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_iris
@@ -54,20 +61,29 @@ def prepare_xy(df):
     y = df['label']
     return X.values, y.values
 
-def train_and_eval(X, y):
+def train_and_eval(X, y, model_type="randomforest"):
     # basic train/test split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-    clf = RandomForestClassifier(n_estimators=100, random_state=42)
+    
+    # Select model
+    if model_type.lower() == "svm":
+        clf = SVC(kernel="rbf", random_state=42)
+    elif model_type.lower() == "gradientboosting":
+        clf = GradientBoostingClassifier(n_estimators=100, random_state=42)
+    else:  # randomforest (default)
+        clf = RandomForestClassifier(n_estimators=100, random_state=42)
+    
     clf.fit(X_train, y_train)
     preds = clf.predict(X_test)
     acc = float(accuracy_score(y_test, preds))
     report = classification_report(y_test, preds, output_dict=True)
     cm = confusion_matrix(y_test, preds).tolist()
-    return clf, acc, report, cm, len(y)
+    return clf, acc, report, cm, len(y), model_type.lower()
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["iris", "csv"], default="iris", help="iris(default) or csv")
+    parser.add_argument("--model", choices=["randomforest", "svm", "gradientboosting"], default="randomforest", help="ML model to use")
     parser.add_argument("--files", nargs="*", help="List of CSV files (absolute or relative paths)")
     args = parser.parse_args()
 
@@ -84,7 +100,7 @@ def main():
             X, y = prepare_xy(df)
             feature_names = list(df.drop(columns=['label']).columns)
 
-        clf, acc, report, cm, n_samples = train_and_eval(X, y)
+        clf, acc, report, cm, n_samples, model_type = train_and_eval(X, y, args.model)
 
         # Save model
         joblib.dump(clf, MODEL_PATH.as_posix())
@@ -92,6 +108,7 @@ def main():
         out = {
             "success": True,
             "mode": args.mode,
+            "model_type": model_type,
             "n_samples": n_samples,
             "accuracy": acc,
             "report": report,

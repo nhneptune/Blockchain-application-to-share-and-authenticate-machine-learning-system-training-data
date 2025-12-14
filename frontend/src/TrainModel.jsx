@@ -4,6 +4,7 @@ export default function TrainModel({ walletAddress }) {
   const [datasets, setDatasets] = useState([]);
   const [selectedDatasetId, setSelectedDatasetId] = useState(null);
   const [trainingMode, setTrainingMode] = useState("iris");
+  const [modelType, setModelType] = useState("randomforest");
   const [isTraining, setIsTraining] = useState(false);
   const [trainingId, setTrainingId] = useState(null);
   const [trainingResult, setTrainingResult] = useState(null);
@@ -72,6 +73,7 @@ export default function TrainModel({ walletAddress }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mode: trainingMode,
+          model: modelType,
           trainerAddress: walletAddress,
           datasetId: selectedDataset.id,
           datasetName: selectedDataset.datasetName,
@@ -140,6 +142,7 @@ export default function TrainModel({ walletAddress }) {
     setTrainingResult(null);
     setErrorMsg(null);
     setIsTraining(false);
+    setModelType("randomforest");
   };
 
   return (
@@ -277,6 +280,44 @@ export default function TrainModel({ walletAddress }) {
             </div>
           </div>
 
+          <div style={{ marginBottom: "20px" }}>
+            <label style={{ display: "block", marginBottom: "10px", fontWeight: "bold" }}>
+              🤖 Model Machine Learning
+            </label>
+            <div style={{ display: "flex", gap: "15px", flexWrap: "wrap" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                <input
+                  type="radio"
+                  name="model"
+                  value="randomforest"
+                  checked={modelType === "randomforest"}
+                  onChange={(e) => setModelType(e.target.value)}
+                />
+                Random Forest
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                <input
+                  type="radio"
+                  name="model"
+                  value="svm"
+                  checked={modelType === "svm"}
+                  onChange={(e) => setModelType(e.target.value)}
+                />
+                SVM (Support Vector Machine)
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                <input
+                  type="radio"
+                  name="model"
+                  value="gradientboosting"
+                  checked={modelType === "gradientboosting"}
+                  onChange={(e) => setModelType(e.target.value)}
+                />
+                Gradient Boosting
+              </label>
+            </div>
+          </div>
+
           <button
             onClick={handleStartTraining}
             disabled={!selectedDatasetId}
@@ -394,6 +435,14 @@ export default function TrainModel({ walletAddress }) {
                   </td>
                   <td style={{ padding: "8px", borderBottom: "1px solid #e2e8f0" }}>
                     {trainingResult.mode}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ padding: "8px", borderBottom: "1px solid #e2e8f0", fontWeight: "bold" }}>
+                    Model Type
+                  </td>
+                  <td style={{ padding: "8px", borderBottom: "1px solid #e2e8f0" }}>
+                    {trainingResult.model_type || "RandomForest"}
                   </td>
                 </tr>
                 <tr>
