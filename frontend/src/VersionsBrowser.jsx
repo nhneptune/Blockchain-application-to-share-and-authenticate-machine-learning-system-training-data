@@ -175,11 +175,47 @@ export default function VersionsBrowser() {
                     marginBottom: "15px",
                   }}
                 >
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <h3 style={{ margin: "0 0 5px 0" }}>📁 {datasetName}</h3>
                     <small style={{ color: "#666" }}>
                       Dataset ID: #{datasetId} | {dataset.totalVersions} version(s) | Latest: v{dataset.latestVersion}
                     </small>
+                    {dataset.contributors && dataset.contributors.length > 0 && (
+                      <div style={{ marginTop: "8px" }}>
+                        <small style={{ color: "#2196F3", fontWeight: "bold" }}>
+                          👥 Contributors ({dataset.contributors.length}):
+                        </small>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "6px" }}>
+                          {dataset.contributors.map((contrib, idx) => (
+                            <span
+                              key={idx}
+                              style={{
+                                backgroundColor:
+                                  contrib.role === "owner"
+                                    ? "#e3f2fd"
+                                    : contrib.role === "editor"
+                                    ? "#fff3e0"
+                                    : "#f5f5f5",
+                                padding: "4px 10px",
+                                borderRadius: "12px",
+                                fontSize: "11px",
+                                border:
+                                  contrib.role === "owner"
+                                    ? "1px solid #2196F3"
+                                    : contrib.role === "editor"
+                                    ? "1px solid #ff9800"
+                                    : "1px solid #ccc",
+                              }}
+                            >
+                              {contrib.role === "owner" && "👑 "}
+                              {contrib.role === "editor" && "✏️ "}
+                              {contrib.role === "viewer" && "👁️ "}
+                              {contrib.address.substring(0, 10)}...
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

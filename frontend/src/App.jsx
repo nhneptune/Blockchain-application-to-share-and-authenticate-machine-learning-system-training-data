@@ -8,6 +8,7 @@ import UpdateData from "./UpdateData";
 import ContributionsTable from "./ContributionsTable";
 import VersionsBrowser from "./VersionsBrowser";
 import TrainModel from "./TrainModel";
+import MyDatasets from "./MyDatasets";
 import "./App.css";
 
 // --- Trang Dashboard (Trang chủ) ---
@@ -107,7 +108,14 @@ function App() {
           </div>
         } />
 
-        {/* TRANG 4: Register Metadata */}
+        {/* TRANG 4: My Datasets */}
+        <Route path="my-datasets" element={
+          <div>
+            <MyDatasets walletAddress={account} />
+          </div>
+        } />
+
+        {/* TRANG 5: Register Metadata */}
         <Route path="register" element={
           <div>
             <h2 className="page-title">📝 Register Metadata</h2>
@@ -129,7 +137,7 @@ function App() {
           </div>
         } />
 
-        {/* TRANG 5: Versions Browser */}
+        {/* TRANG 6: Versions Browser */}
         <Route path="versions" element={
           <div>
             <h2 className="page-title">📜 Dataset versions</h2>
@@ -140,14 +148,14 @@ function App() {
           </div>
         } />
 
-        {/* TRANG 6: History Table */}
+        {/* TRANG 7: History Table */}
         <Route path="history" element={
           <div>
             <ContributionsTable />
           </div>
         } />
 
-        {/* TRANG 7: Train Model */}
+        {/* TRANG 8: Train Model */}
         <Route path="train" element={
           <div>
             <TrainModel walletAddress={account} />

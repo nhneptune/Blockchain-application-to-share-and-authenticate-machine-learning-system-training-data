@@ -27,9 +27,7 @@ export default function Layout({ account, handleLogout }) {
         <nav className="menu">
 
           <p className="menu-title">Main Menu</p>
-
          
-
           <NavLink to="/" className={({ isActive }) => (isActive ? "menu-item active" : "menu-item")}>
 
             <span>🏠</span> Dashboard
@@ -45,6 +43,12 @@ export default function Layout({ account, handleLogout }) {
           <NavLink to="/update" className={({ isActive }) => (isActive ? "menu-item active" : "menu-item")}>
 
             <span>🔄</span> Update Data
+
+          </NavLink>
+
+          <NavLink to="/my-datasets" className={({ isActive }) => (isActive ? "menu-item active" : "menu-item")}>
+
+            <span>📚</span> My Datasets
 
           </NavLink>
 

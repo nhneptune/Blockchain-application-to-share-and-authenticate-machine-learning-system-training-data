@@ -6,6 +6,7 @@ import { contractABI, addresses } from "./constants";
 export default function UpdateData({ walletAddress }) {
   const [datasets, setDatasets] = useState([]);
   const [selectedDataset, setSelectedDataset] = useState(null);
+  const [userRole, setUserRole] = useState(null); // owner, editor, viewer, or null
   const [newFile, setNewFile] = useState(null);
   const [changelog, setChangelog] = useState("");
   const [clientHash, setClientHash] = useState("");
@@ -19,17 +20,68 @@ export default function UpdateData({ walletAddress }) {
 
   // Fetch danh sách datasets từ backend
   useEffect(() => {
-    fetchDatasets();
-  }, []);
+    if (walletAddress) {
+      fetchDatasets();
+    }
+  }, [walletAddress]);
+
+  // Fetch user role for selected dataset (từ collaborations API)
+  useEffect(() => {
+    if (selectedDataset) {
+      fetchUserRole();
+    }
+  }, [selectedDataset]);
 
   const fetchDatasets = async () => {
     try {
-      const res = await fetch("http://localhost:4000/contributions");
+      // 🔒 Chỉ lấy datasets mà user là owner hoặc editor
+      const res = await fetch(
+        `http://localhost:4000/collaborations/my-datasets/${walletAddress}`
+      );
       const data = await res.json();
-      setDatasets(data.items || []);
+
+      if (data.success) {
+        // Filter: Chỉ lấy datasets mà user có quyền edit (owner hoặc editor)
+        const editableDatasets = data.datasets?.filter(
+          (d) => d.userRole === "owner" || d.userRole === "editor"
+        ) || [];
+        setDatasets(editableDatasets);
+      } else {
+        setError("Không thể tải danh sách datasets");
+        setDatasets([]);
+      }
     } catch (err) {
       console.error("Error fetching datasets:", err);
       setError("Không thể tải danh sách datasets");
+      setDatasets([]);
+    }
+  };
+
+  const fetchUserRole = async () => {
+    if (!selectedDataset || !walletAddress) {
+      setUserRole(null);
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `http://localhost:4000/collaborations/my-datasets/${walletAddress}`
+      );
+      const data = await res.json();
+
+      if (data.success) {
+        const datasetData = data.datasets?.find(
+          (d) => d.id === selectedDataset.id
+        );
+        if (datasetData) {
+          setUserRole(datasetData.userRole);
+        } else {
+          setUserRole(null);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching user role:", err);
+      setUserRole(null);
     }
   };
 
@@ -53,6 +105,14 @@ export default function UpdateData({ walletAddress }) {
   const handleUpdate = async () => {
     if (!selectedDataset) {
       setError("Vui lòng chọn dataset để cập nhật");
+      return;
+    }
+
+    // Check permissions: Only owner or editor can update
+    if (userRole && !["owner", "editor"].includes(userRole)) {
+      setError(
+        `❌ Bạn không có quyền cập nhật dataset này. Vai trò của bạn: ${userRole}`
+      );
       return;
     }
 
@@ -167,7 +227,7 @@ export default function UpdateData({ walletAddress }) {
 
       setRegisterStatus("⏳ Đang gửi transaction lên blockchain...");
 
-      const dsName = selectedDataset.metadata?.datasetName || "Unknown Dataset";
+      const dsName = selectedDataset.datasetName || selectedDataset.metadata?.datasetName || "Unknown Dataset";
       const dsDesc = changelog || selectedDataset.metadata?.description || "Version update";
       const dsType = selectedDataset.metadata?.dataType || "mixed";
       const dsLicense = selectedDataset.metadata?.license || "CC0";
@@ -267,7 +327,7 @@ export default function UpdateData({ walletAddress }) {
             <option value="">-- Chọn dataset --</option>
             {datasets.map((d) => (
               <option key={d.id} value={d.id}>
-                {d.metadata?.datasetName}
+                {d.datasetName || d.metadata?.datasetName || `Dataset #${d.id}`}
               </option>
             ))}
           </select>
@@ -285,10 +345,10 @@ export default function UpdateData({ walletAddress }) {
             }}
           >
             <p style={{ margin: "5px 0" }}>
-              <b>📊 Dataset:</b> {selectedDataset.metadata?.datasetName}
+              <b>📊 Dataset:</b> {selectedDataset.datasetName || selectedDataset.metadata?.datasetName}
             </p>
             <p style={{ margin: "5px 0" }}>
-              <b>📝 Loại:</b> {selectedDataset.metadata?.dataType}
+              <b>📝 Loại:</b> {selectedDataset.dataType || selectedDataset.metadata?.dataType}
             </p>
             <p style={{ margin: "5px 0" }}>
               <b>📦 Kích thước:</b> {selectedDataset.fileSize ? (selectedDataset.fileSize / 1024).toFixed(2) : "N/A"} KB
@@ -296,6 +356,23 @@ export default function UpdateData({ walletAddress }) {
             <p style={{ margin: "5px 0" }}>
               <b>🔗 Hash hiện tại:</b> {selectedDataset.hash?.substring(0, 16)}...
             </p>
+            <p style={{ margin: "5px 0" }}>
+              <b>👤 Vai trò của bạn:</b>{" "}
+              {userRole === "owner" ? (
+                <span style={{ color: "#4b7bec", fontWeight: "bold" }}>👑 Owner</span>
+              ) : userRole === "editor" ? (
+                <span style={{ color: "#ff9800", fontWeight: "bold" }}>✏️ Editor</span>
+              ) : userRole === "viewer" ? (
+                <span style={{ color: "#999", fontWeight: "bold" }}>👁️ Viewer (Chỉ xem)</span>
+              ) : (
+                <span style={{ color: "#ccc" }}>Đang tải...</span>
+              )}
+            </p>
+            {userRole === "viewer" && (
+              <p style={{ margin: "10px 0 0 0", color: "#d32f2f", fontWeight: "bold" }}>
+                ❌ Bạn không có quyền cập nhật dataset này
+              </p>
+            )}
           </div>
         )}
       </div>

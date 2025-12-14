@@ -5,6 +5,7 @@ const cors = require("cors");
 // Import routes
 const uploadRouter = require("./routes/upload");
 const contributionsRouter = require("./routes/contributions");
+const collaborationsRouter = require("./routes/collaborations");
 const mlRouter = require("./routes/ml");
 const healthRouter = require("./routes/health");
 const versionsRouter = require("./routes/versions");
@@ -26,6 +27,9 @@ app.use("/upload", uploadRouter);
 // Blockchain contributions
 app.use("/contributions", contributionsRouter);
 
+// Collaborations (multiple contributors)
+app.use("/collaborations", collaborationsRouter);
+
 // Versioning
 app.use("/versions", versionsRouter);
 
@@ -44,6 +48,10 @@ app.listen(PORT, () => {
   console.log(`   GET  /health`);
   console.log(`   POST /upload`);
   console.log(`   GET  /contributions`);
+  console.log(`   POST /collaborations/:datasetId/add-contributor`);
+  console.log(`   DELETE /collaborations/:datasetId/remove-contributor/:address`);
+  console.log(`   GET  /collaborations/:datasetId/contributors`);
+  console.log(`   GET  /collaborations/my-datasets/:address`);
   console.log(`   POST /versions/create`);
   console.log(`   GET  /versions/all`);
   console.log(`   GET  /versions/:dataId`);

@@ -116,6 +116,14 @@ function createDataset(metadata) {
     license: metadata.license,
     createdAt: new Date().toISOString(),
     blockchainId: null,
+    // 🔥 Thêm contributors array - owner tự động là contributor
+    contributors: [
+      {
+        address: metadata.ownerAddress.toLowerCase(),
+        role: "owner",
+        addedAt: new Date().toISOString(),
+      },
+    ],
     versions: [
       {
         version: "1.0",
