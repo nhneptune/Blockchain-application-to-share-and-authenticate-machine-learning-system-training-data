@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import CollaboratorsManager from "./CollaboratorsManager";
+import RoyaltyManager from "./RoyaltyManager";
 
 export default function DatasetDetail({ datasetId, walletAddress, onBack }) {
   const [dataset, setDataset] = useState(null);
@@ -158,10 +159,19 @@ export default function DatasetDetail({ datasetId, walletAddress, onBack }) {
       </div>
 
       {/* Collaborators Manager */}
-      {dataset.metadata?.ownerAddress && (
+      {(dataset.metadata?.ownerAddress || dataset.ownerAddress) && (
         <CollaboratorsManager
           datasetId={dataset.id}
-          ownerAddress={dataset.metadata.ownerAddress}
+          ownerAddress={dataset.metadata?.ownerAddress || dataset.ownerAddress}
+          walletAddress={walletAddress}
+        />
+      )}
+
+      {/* Royalty Manager */}
+      {(dataset.metadata?.ownerAddress || dataset.ownerAddress) && (
+        <RoyaltyManager
+          datasetId={dataset.id}
+          ownerAddress={dataset.metadata?.ownerAddress || dataset.ownerAddress}
           walletAddress={walletAddress}
         />
       )}

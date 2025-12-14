@@ -9,6 +9,7 @@ import ContributionsTable from "./ContributionsTable";
 import VersionsBrowser from "./VersionsBrowser";
 import TrainModel from "./TrainModel";
 import MyDatasets from "./MyDatasets";
+import RewardsDashboard from "./RewardsDashboard";
 import "./App.css";
 
 // --- Trang Dashboard (Trang chủ) ---
@@ -159,6 +160,16 @@ function App() {
         <Route path="train" element={
           <div>
             <TrainModel walletAddress={account} />
+          </div>
+        } />
+
+        {/* TRANG 9: Rewards Dashboard */}
+        <Route path="rewards" element={
+          <div>
+            <h2 className="page-title">💰 Dashboard Phần Thưởng</h2>
+            <div className="vitality-card">
+              <RewardsDashboard walletAddress={account} />
+            </div>
           </div>
         } />
 

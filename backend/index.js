@@ -6,6 +6,7 @@ const cors = require("cors");
 const uploadRouter = require("./routes/upload");
 const contributionsRouter = require("./routes/contributions");
 const collaborationsRouter = require("./routes/collaborations");
+const royaltyRouter = require("./routes/royalty");
 const mlRouter = require("./routes/ml");
 const healthRouter = require("./routes/health");
 const versionsRouter = require("./routes/versions");
@@ -29,6 +30,9 @@ app.use("/contributions", contributionsRouter);
 
 // Collaborations (multiple contributors)
 app.use("/collaborations", collaborationsRouter);
+
+// Royalty/Rewards System
+app.use("/royalty", royaltyRouter);
 
 // Versioning
 app.use("/versions", versionsRouter);
@@ -58,6 +62,8 @@ app.listen(PORT, () => {
   console.log(`   GET  /versions/:dataId/latest`);
   console.log(`   POST /versions/register-on-blockchain`);
   console.log(`   POST /ml/train`);
+  console.log(`   POST /royalty/:datasetId/record-usage`);
+  console.log(`   GET  /royalty/my-rewards/:address`);
   console.log(`PID: ${process.pid}`);
 });
 

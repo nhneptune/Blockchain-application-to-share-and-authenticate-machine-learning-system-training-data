@@ -1,9 +1,41 @@
 const express = require("express");
 const { spawn } = require("child_process");
 const path = require("path");
+const axios = require("axios");
 const trainingDB = require("../trainingDB");
 
 const router = express.Router();
+
+/**
+ * Helper: Auto-record usage in royalty system after training completes
+ */
+async function recordUsageInRoyalty(datasetId, trainerAddress, model, accuracy) {
+  try {
+    // Default reward pool (should match what backend uses)
+    const rewardPool = 100; // Or fetch from environment/config
+    
+    console.log(`🔄 Auto-recording royalty for dataset ${datasetId}...`);
+    
+    const response = await axios.post(
+      `http://localhost:4000/royalty/${datasetId}/record-usage`,
+      {
+        trainer: trainerAddress,
+        modelType: model,
+        accuracy: Math.round(accuracy * 100 * 100), // Convert 0.95 to 9500 (95%)
+        rewardPool
+      },
+      { timeout: 5000 }
+    );
+
+    console.log(`✅ Royalty recorded for dataset ${datasetId}:`, response.data);
+  } catch (err) {
+    console.error(`❌ Royalty auto-record failed for dataset ${datasetId}:`, err.message);
+    if (err.response) {
+      console.error(`   Response status: ${err.response.status}`);
+      console.error(`   Response data:`, err.response.data);
+    }
+  }
+}
 
 /**
  * Helper: Call Python training script and return parsed JSON
@@ -65,7 +97,7 @@ function runPythonTrain(args = []) {
  */
 router.post("/train", async (req, res) => {
   try {
-    const { mode = "iris", model = "randomforest", files = [], trainerAddress, datasetName, datasetHash } = req.body;
+    const { mode = "iris", model = "randomforest", files = [], trainerAddress, datasetName, datasetHash, datasetId } = req.body;
 
     // Validate required fields
     if (!trainerAddress) {
@@ -82,13 +114,14 @@ router.post("/train", async (req, res) => {
       return path.resolve(backendRoot, f);
     });
 
-    // Create training record
+    // Create training record (pass datasetId for royalty system)
     const trainingRecord = trainingDB.createTrainingRecord(
       trainerAddress,
       datasetName || "Unnamed Dataset",
       datasetHash || "unknown",
       mode,
-      absoluteFiles
+      absoluteFiles,
+      datasetId  // ← Pass datasetId
     );
 
     // Update status to 'training'
@@ -108,6 +141,20 @@ router.post("/train", async (req, res) => {
         // Training success
         trainingDB.updateTrainingCompleted(trainingRecord.trainingId, result);
         console.log(`✅ Training ${trainingRecord.trainingId} completed`);
+        console.log(`   Dataset ID: ${trainingRecord.datasetId || 'null (Iris mode)'}`);
+        
+        // AUTO-TRIGGER: Record usage in royalty system if dataset specified
+        if (trainingRecord.datasetId) {
+          console.log(`   → Auto-triggering reward recording...`);
+          recordUsageInRoyalty(
+            trainingRecord.datasetId,
+            trainingRecord.trainerAddress,
+            model,
+            result.accuracy
+          );
+        } else {
+          console.log(`   → No dataset specified, skipping reward recording`);
+        }
       })
       .catch((err) => {
         // Training failed

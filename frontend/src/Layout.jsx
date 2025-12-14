@@ -70,6 +70,12 @@ export default function Layout({ account, handleLogout }) {
 
           </NavLink>
 
+          <NavLink to="/rewards" className={({ isActive }) => (isActive ? "menu-item active" : "menu-item")}>
+
+            <span>💰</span> Dashboard Phần Thưởng
+
+          </NavLink>
+
         </nav>
 
 

@@ -21,10 +21,31 @@ contract DataRegistry {
         string changeLog;         // Mô tả thay đổi
     }
 
+    struct Contributor {
+        address addr;             // Wallet address
+        uint256 percentage;       // Tỷ lệ đóng góp (0-100)
+        uint256 totalReward;      // Tổng reward đã nhận
+        uint256 joinedAt;         // Thời gian tham gia
+    }
+
+    struct ModelUsage {
+        address trainer;          // Người training
+        string modelType;         // Loại model
+        uint256 accuracy;         // Accuracy (0-100 hoặc 0-10000 để 2 decimals)
+        uint256 timestamp;        // Thời gian training
+        uint256 rewardPool;       // Tổng reward từ model này
+    }
+
     DataInfo[] public dataList;
     
     // Mapping: dataId => array of versions
     mapping(uint256 => Version[]) public dataVersions;
+    
+    // Mapping: dataId => array of contributors
+    mapping(uint256 => Contributor[]) public dataContributors;
+    
+    // Mapping: dataId => array of model usages
+    mapping(uint256 => ModelUsage[]) public modelUsages;
 
     event DataRegistered(
         uint indexed id,
@@ -40,6 +61,29 @@ contract DataRegistry {
         string version,
         address indexed updatedBy,
         string changeLog,
+        uint256 timestamp
+    );
+
+    event ContributorAdded(
+        uint indexed dataId,
+        address indexed contributor,
+        uint256 percentage,
+        uint256 timestamp
+    );
+
+    event ModelUsageRecorded(
+        uint indexed dataId,
+        address indexed trainer,
+        string modelType,
+        uint256 accuracy,
+        uint256 rewardPool,
+        uint256 timestamp
+    );
+
+    event RewardDistributed(
+        uint indexed dataId,
+        address indexed contributor,
+        uint256 amount,
         uint256 timestamp
     );
 
@@ -186,5 +230,150 @@ contract DataRegistry {
             v.updatedBy,
             v.changeLog
         );
+    }
+
+    /**
+     * ==================== ROYALTY FUNCTIONS ====================
+     */
+
+    /**
+     * Thêm contributor với tỷ lệ đóng góp
+     * Chỉ owner mới có thể gọi
+     */
+    function addContributor(
+        uint256 _dataId,
+        address _contributor,
+        uint256 _percentage
+    ) external {
+        require(_dataId < dataList.length, "Invalid data ID");
+        require(dataList[_dataId].owner == msg.sender, "Only owner can add contributors");
+        require(_percentage > 0 && _percentage <= 100, "Percentage must be between 1 and 100");
+        require(_contributor != address(0), "Invalid contributor address");
+
+        Contributor[] storage contributors = dataContributors[_dataId];
+
+        // Check duplicate
+        for (uint i = 0; i < contributors.length; i++) {
+            require(contributors[i].addr != _contributor, "Contributor already exists");
+        }
+
+        // Tính tổng percentage hiện tại
+        uint256 totalPercentage = 0;
+        for (uint i = 0; i < contributors.length; i++) {
+            totalPercentage += contributors[i].percentage;
+        }
+
+        // Thêm owner's percentage (mặc định)
+        if (contributors.length == 0) {
+            totalPercentage += 100; // Owner có 100% nếu chưa có contributor
+        }
+
+        require(totalPercentage + _percentage <= 100, "Total percentage exceeds 100%");
+
+        contributors.push(Contributor({
+            addr: _contributor,
+            percentage: _percentage,
+            totalReward: 0,
+            joinedAt: block.timestamp
+        }));
+
+        emit ContributorAdded(_dataId, _contributor, _percentage, block.timestamp);
+    }
+
+    /**
+     * Lấy danh sách contributors của dataset
+     */
+    function getContributors(uint256 _dataId)
+        external
+        view
+        returns (Contributor[] memory)
+    {
+        require(_dataId < dataList.length, "Invalid data ID");
+        return dataContributors[_dataId];
+    }
+
+    /**
+     * Ghi nhận việc sử dụng dataset để train model
+     * Backend sẽ gọi hàm này
+     */
+    function recordModelUsage(
+        uint256 _dataId,
+        address _trainer,
+        string calldata _modelType,
+        uint256 _accuracy,
+        uint256 _rewardPool
+    ) external {
+        require(_dataId < dataList.length, "Invalid data ID");
+        require(_accuracy <= 10000, "Accuracy should be 0-10000 (representing 0-100%)");
+
+        modelUsages[_dataId].push(ModelUsage({
+            trainer: _trainer,
+            modelType: _modelType,
+            accuracy: _accuracy,
+            timestamp: block.timestamp,
+            rewardPool: _rewardPool
+        }));
+
+        emit ModelUsageRecorded(_dataId, _trainer, _modelType, _accuracy, _rewardPool, block.timestamp);
+    }
+
+    /**
+     * Tính toán reward cho mỗi contributor
+     * Theo công thức: contributor_reward = reward_pool * (percentage / 100)
+     */
+    function calculateRewards(uint256 _dataId, uint256 _rewardPool)
+        external
+        view
+        returns (address[] memory contributors, uint256[] memory rewards)
+    {
+        require(_dataId < dataList.length, "Invalid data ID");
+
+        Contributor[] storage dataContributors_local = dataContributors[_dataId];
+        uint256 length = dataContributors_local.length;
+
+        address[] memory contributorAddrs = new address[](length);
+        uint256[] memory rewardAmounts = new uint256[](length);
+
+        for (uint i = 0; i < length; i++) {
+            contributorAddrs[i] = dataContributors_local[i].addr;
+            rewardAmounts[i] = (_rewardPool * dataContributors_local[i].percentage) / 100;
+        }
+
+        return (contributorAddrs, rewardAmounts);
+    }
+
+    /**
+     * Cập nhật reward cho contributor
+     */
+    function updateContributorReward(
+        uint256 _dataId,
+        address _contributor,
+        uint256 _amount
+    ) external {
+        require(_dataId < dataList.length, "Invalid data ID");
+        require(dataList[_dataId].owner == msg.sender, "Only owner can update rewards");
+
+        Contributor[] storage contributors = dataContributors[_dataId];
+        for (uint i = 0; i < contributors.length; i++) {
+            if (contributors[i].addr == _contributor) {
+                contributors[i].totalReward += _amount;
+                emit RewardDistributed(_dataId, _contributor, _amount, block.timestamp);
+                return;
+            }
+        }
+
+        revert("Contributor not found");
+    }
+
+    /**
+     * Lấy lịch sử sử dụng dataset (model training)
+     */
+    function getModelUsageHistory(uint256 _dataId)
+        external
+        view
+        returns (ModelUsage[] memory)
+    {
+        require(_dataId < dataList.length, "Invalid data ID");
+        return modelUsages[_dataId];
     }
 }

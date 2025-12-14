@@ -55,9 +55,10 @@ function writeDB(data) {
  * @param {string} datasetHash - SHA-256 hash của dataset (từ blockchain)
  * @param {string} mode - "iris" hoặc "csv"
  * @param {array} files - Danh sách file (nếu mode = csv)
+ * @param {number} datasetId - ID của dataset (cho royalty system)
  * @returns {object} Training record
  */
-function createTrainingRecord(trainerAddress, datasetName, datasetHash, mode, files = []) {
+function createTrainingRecord(trainerAddress, datasetName, datasetHash, mode, files = [], datasetId = null) {
   const db = readDB();
   
   const trainingId = db.nextTrainingId++;
@@ -68,6 +69,7 @@ function createTrainingRecord(trainerAddress, datasetName, datasetHash, mode, fi
     trainerAddress,
     datasetName,
     datasetHash,
+    datasetId,  // ← Added for royalty system
     mode,
     files,
     status: "pending", // pending, training, completed, failed
